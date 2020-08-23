@@ -2,10 +2,13 @@ package org.jfrog.buildinfo;
 
 import org.apache.maven.AbstractMavenLifecycleParticipant;
 import org.apache.maven.MavenExecutionException;
+import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
+
+import java.util.List;
 
 /**
  * @author yahavi
@@ -20,7 +23,9 @@ public class ArtifactoryMavenLifecycleParticipant extends AbstractMavenLifecycle
     public void afterProjectsRead(MavenSession session) throws MavenExecutionException {
         super.afterProjectsRead(session);
         MavenProject project = session.getTopLevelProject();
-        project.setPluginArtifactRepositories(helper.getResolutionPluginRepositories(session.getRepositorySession()));
+        List<ArtifactRepository> resolutionRepositories = helper.getResolutionRepositories();
+        project.setPluginArtifactRepositories(resolutionRepositories);
+        project.setRemoteArtifactRepositories(resolutionRepositories);
         System.out.println("afterProjectsRead!!!");
     }
 

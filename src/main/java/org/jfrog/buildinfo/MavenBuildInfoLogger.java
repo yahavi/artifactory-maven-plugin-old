@@ -16,16 +16,15 @@
 
 package org.jfrog.buildinfo;
 
-import org.codehaus.plexus.logging.Logger;
 import org.jfrog.build.api.util.Log;
 
 /**
  * @author Noam Y. Tenne
  */
 public class MavenBuildInfoLogger implements Log {
-    private Logger logger;
+    private final org.apache.maven.plugin.logging.Log logger;
 
-    public MavenBuildInfoLogger(Logger logger) {
+    public MavenBuildInfoLogger(org.apache.maven.plugin.logging.Log logger) {
         this.logger = logger;
     }
 

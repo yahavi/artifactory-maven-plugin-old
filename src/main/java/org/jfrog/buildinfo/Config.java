@@ -39,14 +39,4 @@ public class Config {
         @Delegate(types = {ArtifactoryClientConfiguration.BuildInfoHandler.class, PrefixPropertyHandler.class})
         ArtifactoryClientConfiguration.BuildInfoHandler delegate = CLIENT_CONFIGURATION.info;
     }
-
-    public static class LicenseControl {
-        @Delegate(types = {ArtifactoryClientConfiguration.LicenseControlHandler.class, PrefixPropertyHandler.class})
-        ArtifactoryClientConfiguration.LicenseControlHandler delegate = CLIENT_CONFIGURATION.info.licenseControl;
-    }
-
-    public static class IssuesTracker {
-        @Delegate(types = {ArtifactoryClientConfiguration.IssuesTrackerHandler.class, PrefixPropertyHandler.class})
-        ArtifactoryClientConfiguration.IssuesTrackerHandler delegate = CLIENT_CONFIGURATION.info.issues;
-    }
 }

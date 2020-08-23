@@ -1,9 +1,7 @@
 package org.jfrog.buildinfo;
 
 import org.apache.commons.lang.StringUtils;
-import org.codehaus.plexus.component.annotations.Requirement;
-import org.codehaus.plexus.logging.Logger;
-import org.jfrog.build.api.util.Log;
+import org.apache.maven.plugin.logging.Log;
 import org.jfrog.build.extractor.BuildInfoExtractorUtils;
 import org.jfrog.build.extractor.clientConfiguration.ArtifactoryClientConfiguration;
 
@@ -15,25 +13,14 @@ import java.util.Properties;
 
 public class ResolutionHelper {
 
-    @Requirement
-    private Logger logger;
+    private final org.jfrog.build.api.util.Log logger;
     private ArtifactoryClientConfiguration internalConfiguration;
-    private boolean initialized = false;
 
-    public void init(Properties allMavenProps) {
-        if (internalConfiguration != null) {
-            return;
-        }
-
-        Log log = new MavenBuildInfoLogger(logger);
-        Properties allProps = BuildInfoExtractorUtils.mergePropertiesWithSystemAndPropertyFile(allMavenProps, log);
-        internalConfiguration = new ArtifactoryClientConfiguration(log);
+    public ResolutionHelper(Log logger, Properties allMavenProps, ArtifactoryClientConfiguration clientConfiguration) {
+        this.logger = new MavenBuildInfoLogger(logger);
+        Properties allProps = BuildInfoExtractorUtils.mergePropertiesWithSystemAndPropertyFile(allMavenProps, this.logger);
+        this.internalConfiguration = clientConfiguration;
         internalConfiguration.fillFromProperties(allProps);
-        initialized = true;
-    }
-
-    public boolean isInitialized() {
-        return initialized;
     }
 
     /**
