@@ -19,7 +19,7 @@ public class ArtifactoryMavenPluginITest extends TestCase {
 //        Map<String, String> envVars = new HashMap<String, String>() {{
 //            put("MAVEN_OPTS", "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005");
 //        }};
-//        verifier.executeGoal("publish", envVars);
+//        verifier.executeGoal("install", envVars);
 //        verifier.verifyErrorFreeLog();
     }
 }

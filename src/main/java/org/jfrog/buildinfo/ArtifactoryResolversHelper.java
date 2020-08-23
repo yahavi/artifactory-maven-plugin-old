@@ -17,11 +17,11 @@ import java.util.Properties;
 
 public class ArtifactoryResolversHelper {
 
-    private List<ArtifactRepository> resolutionRepositories = null;
-    private ArtifactRepository releaseRepository = null;
-    private ArtifactRepository snapshotRepository = null;
+    private List<ArtifactRepository> resolutionRepositories;
     private final ResolutionHelper resolutionHelper;
-    private Log logger;
+    private ArtifactRepository snapshotRepository;
+    private ArtifactRepository releaseRepository;
+    private final Log logger;
 
     public ArtifactoryResolversHelper(Log logger, MavenSession session, ArtifactoryClientConfiguration clientConfiguration) {
         this.logger = logger;

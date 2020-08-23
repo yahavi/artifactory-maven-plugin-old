@@ -51,6 +51,49 @@
         </pluginManagement>
         <plugins>
             <plugin>
+                <artifactId>artifactory-maven-plugin</artifactId>
+                <inherited>false</inherited>
+                <configuration/>
+                <executions>
+                    <execution>
+                        <id>build-info</id>
+                        <goals>
+                            <goal>publish</goal>
+                        </goals>
+                        <configuration>
+                            <!--                            <deployProperties>-->
+                            <!--                                <gradle>awesome</gradle>-->
+                            <!--                            </deployProperties>-->
+                            <artifactory>
+                                <includeEnvVars>true</includeEnvVars>
+                                <envVarsExcludePatterns>*password*,*secret*,*key*,*token*,*passphrase*</envVarsExcludePatterns>
+                                <timeoutSec>60</timeoutSec>
+                            </artifactory>
+                            <resolver>
+                                <contextUrl>https://ecosysjfrog.jfrog.io/artifactory</contextUrl>
+                                <username>yahavi</username>
+                                <password>AKCp5Zm7t7zzGwDVMuonfJwCmiX2x1UkKJA3ZKRhqLZdDFd5NWGDmbw8eFhVJtF5M2UBmz26J</password>
+                                <repoKey>libs-release</repoKey>
+                                <downloadSnapshotRepoKey>libs-snapshot</downloadSnapshotRepoKey>
+                            </resolver>
+                            <publisher>
+                                <contextUrl>https://ecosysjfrog.jfrog.io/artifactory</contextUrl>
+                                <username>yahavi</username>
+                                <password>AKCp5Zm7t7zzGwDVMuonfJwCmiX2x1UkKJA3ZKRhqLZdDFd5NWGDmbw8eFhVJtF5M2UBmz26J</password>
+                                <excludePatterns>*-tests.jar</excludePatterns>
+                                <repoKey>libs-release-local</repoKey>
+                                <snapshotRepoKey>libs-snapshot-local</snapshotRepoKey>
+                            </publisher>
+                            <buildInfo>
+                                <buildName>plugin-demo</buildName>
+                                <buildNumber>${buildnumber}</buildNumber>
+                                <buildUrl>http://build-url.org</buildUrl>
+                            </buildInfo>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
                 <configuration>

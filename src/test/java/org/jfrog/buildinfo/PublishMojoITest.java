@@ -1,21 +1,19 @@
 package org.jfrog.buildinfo;
 
-import org.apache.maven.plugin.testing.AbstractMojoTestCase;
-
 import java.io.File;
 
 /**
  * @author yahavi
  */
 
-public class PublishMojoITest extends AbstractMojoTestCase {
+public class PublishMojoITest extends ArtifactoryPluginTestCase {
 
     public void testSomething() throws Exception {
-//        File testPom = new File(getBasedir(), "src/test/resources/maven-example/pom.xml");
-//        PublishMojo mojo = (PublishMojo) lookupEmptyMojo("publish", testPom);
-//        assertNotNull(mojo);
-//        mojo.execute();
-
+        File testPom = new File(getBasedir(), "src/test/resources/maven-example/pom.xml");
+        PublishMojo mojo = (PublishMojo) lookupConfiguredMojo(testPom);
+        assertNotNull(mojo);
+        mojo.artifactory = new Config.Artifactory();
+        mojo.execute();
     }
 
 }
