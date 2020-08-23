@@ -17,7 +17,7 @@ import java.util.List;
 public class ArtifactoryMavenLifecycleParticipant extends AbstractMavenLifecycleParticipant {
 
     @Requirement
-    ArtifactoryEclipseResolversHelper helper;
+    ArtifactoryResolversHelper helper;
 
     @Override
     public void afterProjectsRead(MavenSession session) throws MavenExecutionException {

@@ -18,7 +18,7 @@ import java.util.List;
 public class PublishMojo extends AbstractMojo {
 
     @Requirement
-    ArtifactoryEclipseResolversHelper resolversHelper;
+    ArtifactoryResolversHelper resolversHelper;
 
     @Parameter(required = true, defaultValue = "${project}")
     private MavenProject project;
@@ -39,11 +39,13 @@ public class PublishMojo extends AbstractMojo {
     Config.BuildInfo buildInfo;
 
     public void execute() {
-        ArtifactoryEclipseResolversHelper helper = new ArtifactoryEclipseResolversHelper(getLog(), session, artifactory.delegate);
+        ArtifactoryResolversHelper helper = new ArtifactoryResolversHelper(getLog(), session, artifactory.delegate);
         List<ArtifactRepository> resolutionRepositories = helper.getResolutionRepositories();
         session.getProjects().forEach(mavenProject -> {
             mavenProject.setPluginArtifactRepositories(resolutionRepositories);
             mavenProject.setRemoteArtifactRepositories(resolutionRepositories);
+            mavenProject.setReleaseArtifactRepository(helper.getReleaseRepository());
+            mavenProject.setSnapshotArtifactRepository(helper.getSnapshotRepository());
         });
     }
 }
