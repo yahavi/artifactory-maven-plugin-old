@@ -52,6 +52,7 @@
         <plugins>
             <plugin>
                 <artifactId>artifactory-maven-plugin</artifactId>
+                <version>3.0.0</version>
                 <inherited>false</inherited>
                 <configuration/>
                 <executions>
@@ -61,9 +62,9 @@
                             <goal>publish</goal>
                         </goals>
                         <configuration>
-                            <!--                            <deployProperties>-->
-                            <!--                                <gradle>awesome</gradle>-->
-                            <!--                            </deployProperties>-->
+                            <deployProperties>
+                                <gradle>awesome</gradle>
+                            </deployProperties>
                             <artifactory>
                                 <includeEnvVars>true</includeEnvVars>
                                 <envVarsExcludePatterns>*password*,*secret*,*key*,*token*,*passphrase*</envVarsExcludePatterns>

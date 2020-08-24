@@ -15,7 +15,7 @@ import org.jfrog.build.extractor.clientConfiguration.ArtifactoryClientConfigurat
 import java.util.List;
 import java.util.Properties;
 
-public class ArtifactoryResolversHelper {
+public class ArtifactoryRepoHelper {
 
     private List<ArtifactRepository> resolutionRepositories;
     private final ResolutionHelper resolutionHelper;
@@ -23,7 +23,7 @@ public class ArtifactoryResolversHelper {
     private ArtifactRepository releaseRepository;
     private final Log logger;
 
-    public ArtifactoryResolversHelper(Log logger, MavenSession session, ArtifactoryClientConfiguration clientConfiguration) {
+    public ArtifactoryRepoHelper(Log logger, MavenSession session, ArtifactoryClientConfiguration clientConfiguration) {
         this.logger = logger;
         Properties allMavenProps = new Properties() {{
             putAll(session.getSystemProperties());

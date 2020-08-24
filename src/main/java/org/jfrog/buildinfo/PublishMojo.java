@@ -1,8 +1,6 @@
 package org.jfrog.buildinfo;
 
-import org.apache.maven.AbstractMavenLifecycleParticipant;
 import org.apache.maven.artifact.repository.ArtifactRepository;
-import org.apache.maven.execution.ExecutionEvent;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.lifecycle.internal.DefaultExecutionEventCatapult;
 import org.apache.maven.lifecycle.internal.ExecutionEventCatapult;
@@ -15,6 +13,7 @@ import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.component.annotations.Requirement;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Artifactory plugin creating and deploying JSON build data together with build artifacts.
@@ -35,7 +34,10 @@ public class PublishMojo extends AbstractMojo {
     private DefaultExecutionEventCatapult eventCatapult;
 
     @Requirement
-    ArtifactoryResolversHelper resolversHelper;
+    ArtifactoryRepoHelper resolversHelper;
+
+    @Parameter
+    Map<String, String> deployProperties;
 
     @Parameter
     Config.Artifactory artifactory;
@@ -50,7 +52,7 @@ public class PublishMojo extends AbstractMojo {
     Config.Resolver resolver;
 
     public void execute() {
-        ArtifactoryResolversHelper helper = new ArtifactoryResolversHelper(getLog(), session, artifactory.delegate);
+        ArtifactoryRepoHelper helper = new ArtifactoryRepoHelper(getLog(), session, artifactory.delegate);
         List<ArtifactRepository> resolutionRepositories = helper.getResolutionRepositories();
         for (MavenProject mavenProject : session.getProjects()) {
             mavenProject.setPluginArtifactRepositories(resolutionRepositories);
