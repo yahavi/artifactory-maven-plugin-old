@@ -18,6 +18,7 @@ import java.util.Map;
 /**
  * Artifactory plugin creating and deploying JSON build data together with build artifacts.
  */
+@SuppressWarnings("unused")
 @Mojo(name = "publish", defaultPhase = LifecyclePhase.VALIDATE, threadSafe = true)
 public class PublishMojo extends AbstractMojo {
 
@@ -26,9 +27,6 @@ public class PublishMojo extends AbstractMojo {
 
     @Parameter(required = true, defaultValue = "${session}")
     MavenSession session;
-
-//    @Component(role = AbstractMavenLifecycleParticipant.class)
-//    private ArtifactoryExecutionListener listener;
 
     @Component(role = ExecutionEventCatapult.class)
     private DefaultExecutionEventCatapult eventCatapult;
@@ -60,6 +58,6 @@ public class PublishMojo extends AbstractMojo {
             mavenProject.setReleaseArtifactRepository(helper.getReleaseRepository());
             mavenProject.setSnapshotArtifactRepository(helper.getSnapshotRepository());
         }
-        session.getRequest().setExecutionListener(new ArtifactoryExecutionListener(getLog()));
+        session.getRequest().setExecutionListener(new ArtifactoryExecutionListener(getLog(), artifactory.delegate));
     }
 }
