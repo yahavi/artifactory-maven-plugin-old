@@ -31,6 +31,9 @@ public class PublishMojo extends AbstractMojo {
     @Parameter(required = true, defaultValue = "${session}")
     MavenSession session;
 
+    @Component(role = ArtifactoryRepositoryListener.class)
+    private ArtifactoryRepositoryListener repositoryListener;
+
     @Component(role = ExecutionEventCatapult.class)
     private DefaultExecutionEventCatapult eventCatapult;
 
@@ -63,7 +66,9 @@ public class PublishMojo extends AbstractMojo {
         }
         skipDefaultDeploy();
         if (session.getGoals().stream().anyMatch(deployGoals::contains)) {
-            session.getRequest().setExecutionListener(new ArtifactoryExecutionListener(session, getLog(), artifactory.delegate));
+            ArtifactoryExecutionListener executionListener = new ArtifactoryExecutionListener(session, getLog(), artifactory.delegate);
+            repositoryListener.setExecutionListener(executionListener);
+            session.getRequest().setExecutionListener(executionListener);
         }
     }
 

@@ -39,6 +39,7 @@ import static org.jfrog.build.extractor.BuildInfoExtractorUtils.getTypeString;
 public class ArtifactoryExecutionListener extends AbstractExecutionListener implements BuildInfoExtractor<ExecutionEvent> {
 
     private final Map<String, DeployDetails> deployableArtifactBuilderMap = Maps.newConcurrentMap();
+    private Set<Artifact> resolvedArtifacts = Collections.synchronizedSet(new HashSet<>());
 
     private final ArtifactoryClientConfiguration conf;
     @SuppressWarnings("unused")
@@ -74,6 +75,8 @@ public class ArtifactoryExecutionListener extends AbstractExecutionListener impl
         addArtifactsToCurrentModule(project, moduleBuilder, artifacts);
         addDependenciesToCurrentModule(moduleBuilder, dependencies);
         buildInfoBuilder.addModule(moduleBuilder.build());
+
+        resolvedArtifacts.clear();
     }
 
     /**
@@ -107,6 +110,12 @@ public class ArtifactoryExecutionListener extends AbstractExecutionListener impl
         return buildInfoBuilder.durationMillis(time).build();
     }
 
+    public void artifactResolved(Artifact artifact) {
+        if (artifact != null) {
+            resolvedArtifacts.add(artifact);
+        }
+    }
+
     private Set<Artifact> getArtifacts(MavenProject project) {
         Set<Artifact> artifacts = Sets.newHashSet(project.getArtifact());
         artifacts.addAll(project.getAttachedArtifacts());
@@ -123,6 +132,7 @@ public class ArtifactoryExecutionListener extends AbstractExecutionListener impl
             art.setFile(artifact.getFile());
             dependencies.add(art);
         }
+        dependencies.addAll(resolvedArtifacts);
         return dependencies;
     }
 
