@@ -2,7 +2,7 @@ package org.jfrog.buildinfo;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.Maven;
-import org.apache.maven.execution.ExecutionEvent;
+import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.logging.Log;
 import org.jfrog.build.api.*;
 import org.jfrog.build.api.builder.BuildInfoMavenBuilder;
@@ -28,10 +28,10 @@ public class BuildInfoModelPropertyResolver extends BuildInfoMavenBuilder {
 
     private final Log logger;
 
-    public BuildInfoModelPropertyResolver(Log logger, ExecutionEvent event, ArtifactoryClientConfiguration clientConf) {
-        super(StringUtils.firstNonBlank(clientConf.info.getBuildName(), event.getSession().getTopLevelProject().getName()));
+    public BuildInfoModelPropertyResolver(Log logger, MavenSession session, ArtifactoryClientConfiguration clientConf) {
+        super(StringUtils.firstNonBlank(clientConf.info.getBuildName(), session.getTopLevelProject().getName()));
         this.logger = logger;
-        resolveCoreProperties(event, clientConf);
+        resolveCoreProperties(session, clientConf);
         resolveProperties(clientConf);
     }
 
@@ -92,14 +92,14 @@ public class BuildInfoModelPropertyResolver extends BuildInfoMavenBuilder {
                 .ciUser(clientConf.info.getPrincipal()).user(clientConf.publisher.getUsername()).build());
     }
 
-    private void resolveCoreProperties(ExecutionEvent event, ArtifactoryClientConfiguration clientConf) {
+    private void resolveCoreProperties(MavenSession session, ArtifactoryClientConfiguration clientConf) {
         String buildNumber = clientConf.info.getBuildNumber();
         if (StringUtils.isBlank(buildNumber)) {
             buildNumber = Long.toString(System.currentTimeMillis());
         }
         number(buildNumber);
 
-        Date buildStartedDate = event.getSession().getRequest().getStartTime();
+        Date buildStartedDate = session.getRequest().getStartTime();
         String buildStarted = clientConf.info.getBuildStarted();
         if (StringUtils.isBlank(buildStarted)) {
             buildStarted = new SimpleDateFormat(Build.STARTED_FORMAT).format(buildStartedDate);

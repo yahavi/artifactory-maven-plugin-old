@@ -58,6 +58,6 @@ public class PublishMojo extends AbstractMojo {
             mavenProject.setReleaseArtifactRepository(helper.getReleaseRepository());
             mavenProject.setSnapshotArtifactRepository(helper.getSnapshotRepository());
         }
-        session.getRequest().setExecutionListener(new ArtifactoryExecutionListener(getLog(), artifactory.delegate));
+        session.getRequest().setExecutionListener(new ArtifactoryExecutionListener(session, getLog(), artifactory.delegate));
     }
 }

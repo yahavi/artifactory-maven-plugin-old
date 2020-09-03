@@ -7,10 +7,13 @@ import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.DefaultArtifact;
 import org.apache.maven.execution.AbstractExecutionListener;
 import org.apache.maven.execution.ExecutionEvent;
+import org.apache.maven.execution.ExecutionListener;
+import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.artifact.ProjectArtifactMetadata;
 import org.apache.maven.repository.legacy.metadata.ArtifactMetadata;
+import org.codehaus.plexus.component.annotations.Component;
 import org.jfrog.build.api.builder.ArtifactBuilder;
 import org.jfrog.build.api.builder.BuildInfoMavenBuilder;
 import org.jfrog.build.api.builder.DependencyBuilder;
@@ -40,59 +43,32 @@ public class ArtifactoryExecutionListener extends AbstractExecutionListener {
 
     private final ThreadLocal<Set<Artifact>> currentModuleDependencies = ThreadLocal.withInitial(() -> Collections.synchronizedSet(new HashSet<>()));
     private final ThreadLocal<Set<Artifact>> currentModuleArtifacts = ThreadLocal.withInitial(() -> Collections.synchronizedSet(new HashSet<>()));
-    private final ThreadLocal<ModuleBuilder> currentModule = ThreadLocal.withInitial(ModuleBuilder::new);
     private final Set<Artifact> resolvedArtifacts = Collections.synchronizedSet(new HashSet<>());
-    private Map<String, DeployDetails> deployableArtifactBuilderMap;
+    private final Map<String, DeployDetails> deployableArtifactBuilderMap = Maps.newConcurrentMap();
+
     private final ArtifactoryClientConfiguration conf;
     @SuppressWarnings("unused")
     private BuildInfoMavenBuilder buildInfoBuilder;
 
     private final Log logger;
 
-    public ArtifactoryExecutionListener(Log logger, ArtifactoryClientConfiguration conf) {
+    public ArtifactoryExecutionListener(MavenSession session, Log logger, ArtifactoryClientConfiguration conf) {
+        this.buildInfoBuilder = new BuildInfoModelPropertyResolver(logger, session, conf);
         this.logger = logger;
         this.conf = conf;
     }
 
-    /**
-     * Initialize the buildInfoBuilder.
-     *
-     * @param event - The execution event
-     */
     @Override
-    public void sessionStarted(ExecutionEvent event) {
-        deployableArtifactBuilderMap = Maps.newConcurrentMap();
-        buildInfoBuilder = new BuildInfoModelPropertyResolver(logger, event, conf);
-    }
-
-    /**
-     * Initialize current module
-     *
-     * @param event - The execution event
-     */
-    @Override
-    public void projectStarted(ExecutionEvent event) {
+    public void projectSucceeded(ExecutionEvent event) {
         MavenProject project = event.getProject();
         if (project == null) {
             logger.warn("Skipping Artifactory Build-Info module initialization: Null project.");
             return;
         }
 
-        ModuleBuilder module = new ModuleBuilder();
-        module.id(getModuleIdString(project.getGroupId(), project.getArtifactId(), project.getVersion()));
-        module.properties(project.getProperties());
-
-        currentModule.set(module);
-    }
-
-    /**
-     * Finalize module - populate 'currentModuleArtifacts' and 'currentModuleDependencies'.
-     *
-     * @param event - The execution event
-     */
-    @Override
-    public void projectSucceeded(ExecutionEvent event) {
-        MavenProject project = event.getProject();
+        ModuleBuilder moduleBuilder = new ModuleBuilder();
+        moduleBuilder.id(getModuleIdString(project.getGroupId(), project.getArtifactId(), project.getVersion()));
+        moduleBuilder.properties(project.getProperties());
 
         // Fill currentModuleArtifacts
         addArtifacts(project);
@@ -101,12 +77,11 @@ public class ArtifactoryExecutionListener extends AbstractExecutionListener {
         addDependencies(project);
 
         // Build module
-        addArtifactsToCurrentModule(project);
-        addDependenciesToCurrentModule();
-        buildInfoBuilder.addModule(currentModule.get().build());
+        addArtifactsToCurrentModule(project, moduleBuilder);
+        addDependenciesToCurrentModule(moduleBuilder);
+        buildInfoBuilder.addModule(moduleBuilder.build());
 
         // Cleanup
-        currentModule.remove();
         currentModuleArtifacts.remove();
         currentModuleDependencies.remove();
         resolvedArtifacts.clear();
@@ -145,8 +120,7 @@ public class ArtifactoryExecutionListener extends AbstractExecutionListener {
         moduleDependencies.addAll(resolvedArtifacts);
     }
 
-    private void addArtifactsToCurrentModule(MavenProject project) {
-        ModuleBuilder module = currentModule.get();
+    private void addArtifactsToCurrentModule(MavenProject project, ModuleBuilder moduleBuilder) {
         Set<Artifact> moduleArtifacts = currentModuleArtifacts.get();
         ArtifactoryClientConfiguration.PublisherHandler publisher = conf.publisher;
         IncludeExcludePatterns patterns = new IncludeExcludePatterns(
@@ -187,8 +161,8 @@ public class ArtifactoryExecutionListener extends AbstractExecutionListener {
             String deploymentPath = getDeploymentPath(groupId, artifactId, artifactVersion, artifactClassifier, artifactExtension);
             if (artifactFile != null && artifactFile.isFile()) {
                 boolean pathConflicts = PatternMatcher.pathConflicts(deploymentPath, patterns);
-                addArtifactToBuildInfo(artifact, pathConflicts, excludeArtifactsFromBuild, module);
-                addDeployableArtifact(artifact, artifactFile, pathConflicts, moduleArtifact.getGroupId(), artifactId, artifactVersion, artifactClassifier, artifactExtension);
+                addArtifactToBuildInfo(artifact, pathConflicts, excludeArtifactsFromBuild, moduleBuilder);
+                addDeployableArtifact(moduleBuilder, artifact, artifactFile, pathConflicts, moduleArtifact.getGroupId(), artifactId, artifactVersion, artifactClassifier, artifactExtension);
             }
         }
         /*
@@ -200,12 +174,11 @@ public class ArtifactoryExecutionListener extends AbstractExecutionListener {
                     nonPomArtifact.getArtifactId(),
                     nonPomArtifact.getVersion(),
                     nonPomArtifact.getClassifier(), "pom");
-            addPomArtifact(nonPomArtifact, module, patterns, deploymentPath, pomFileName, excludeArtifactsFromBuild);
+            addPomArtifact(moduleBuilder, nonPomArtifact, moduleBuilder, patterns, deploymentPath, pomFileName, excludeArtifactsFromBuild);
         }
     }
 
-    private void addDependenciesToCurrentModule() {
-        ModuleBuilder module = currentModule.get();
+    private void addDependenciesToCurrentModule(ModuleBuilder moduleBuilder) {
         Set<Artifact> moduleDependencies = currentModuleDependencies.get();
         for (Artifact dependency : moduleDependencies) {
             File depFile = dependency.getFile();
@@ -217,7 +190,7 @@ public class ArtifactoryExecutionListener extends AbstractExecutionListener {
                 dependencyBuilder.scopes(Sets.newHashSet(scopes));
             }
             setDependencyChecksums(depFile, dependencyBuilder);
-            module.addDependency(dependencyBuilder.build());
+            moduleBuilder.addDependency(dependencyBuilder.build());
         }
     }
 
@@ -247,7 +220,8 @@ public class ArtifactoryExecutionListener extends AbstractExecutionListener {
         return extension;
     }
 
-    private void addPomArtifact(Artifact nonPomArtifact, ModuleBuilder module, IncludeExcludePatterns patterns, String deploymentPath, String pomFileName, boolean excludeArtifactsFromBuild) {
+    private void addPomArtifact(ModuleBuilder moduleBuilder, Artifact nonPomArtifact, ModuleBuilder module,
+                                IncludeExcludePatterns patterns, String deploymentPath, String pomFileName, boolean excludeArtifactsFromBuild) {
         for (ArtifactMetadata metadata : nonPomArtifact.getMetadataList()) {
             if (!(metadata instanceof ProjectArtifactMetadata)) { // The pom metadata
                 continue;
@@ -259,7 +233,7 @@ public class ArtifactoryExecutionListener extends AbstractExecutionListener {
             if (pomFile != null && pomFile.isFile()) {
                 boolean pathConflicts = PatternMatcher.pathConflicts(deploymentPath, patterns);
                 addArtifactToBuildInfo(pomArtifact, pathConflicts, excludeArtifactsFromBuild, module);
-                addDeployableArtifact(pomArtifact, pomFile, pathConflicts, nonPomArtifact.getGroupId(), nonPomArtifact.getArtifactId(), nonPomArtifact.getVersion(), nonPomArtifact.getClassifier(), "pom");
+                addDeployableArtifact(moduleBuilder, pomArtifact, pomFile, pathConflicts, nonPomArtifact.getGroupId(), nonPomArtifact.getArtifactId(), nonPomArtifact.getVersion(), nonPomArtifact.getClassifier(), "pom");
             }
             return;
         }
@@ -290,7 +264,7 @@ public class ArtifactoryExecutionListener extends AbstractExecutionListener {
         }
     }
 
-    private void addDeployableArtifact(org.jfrog.build.api.Artifact artifact, File artifactFile, boolean pathConflicts,
+    private void addDeployableArtifact(ModuleBuilder moduleBuilder, org.jfrog.build.api.Artifact artifact, File artifactFile, boolean pathConflicts,
                                        String groupId, String artifactId, String version, String classifier, String fileExtension) {
         if (pathConflicts) {
             logger.info("'" + artifact.getName() + "' will not be deployed due to the defined include-exclude patterns.");
@@ -306,7 +280,7 @@ public class ArtifactoryExecutionListener extends AbstractExecutionListener {
                 .targetRepository(targetRepository)
                 .addProperties(conf.publisher.getMatrixParams())
                 .packageType(DeployDetails.PackageType.MAVEN).build();
-        String myArtifactId = BuildInfoExtractorUtils.getArtifactId(currentModule.get().build().getId(), artifact.getName());
+        String myArtifactId = BuildInfoExtractorUtils.getArtifactId(moduleBuilder.build().getId(), artifact.getName());
 
         deployableArtifactBuilderMap.put(myArtifactId, deployable);
     }
