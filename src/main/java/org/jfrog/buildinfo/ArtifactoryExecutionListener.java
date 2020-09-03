@@ -7,18 +7,18 @@ import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.DefaultArtifact;
 import org.apache.maven.execution.AbstractExecutionListener;
 import org.apache.maven.execution.ExecutionEvent;
-import org.apache.maven.execution.ExecutionListener;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.artifact.ProjectArtifactMetadata;
 import org.apache.maven.repository.legacy.metadata.ArtifactMetadata;
-import org.codehaus.plexus.component.annotations.Component;
+import org.jfrog.build.api.Build;
 import org.jfrog.build.api.builder.ArtifactBuilder;
 import org.jfrog.build.api.builder.BuildInfoMavenBuilder;
 import org.jfrog.build.api.builder.DependencyBuilder;
 import org.jfrog.build.api.builder.ModuleBuilder;
 import org.jfrog.build.api.util.FileChecksumCalculator;
+import org.jfrog.build.extractor.BuildInfoExtractor;
 import org.jfrog.build.extractor.BuildInfoExtractorUtils;
 import org.jfrog.build.extractor.clientConfiguration.ArtifactoryClientConfiguration;
 import org.jfrog.build.extractor.clientConfiguration.IncludeExcludePatterns;
@@ -28,10 +28,7 @@ import org.jfrog.build.extractor.clientConfiguration.deploy.DeployDetails;
 import java.io.File;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static org.jfrog.build.extractor.BuildInfoExtractorUtils.getModuleIdString;
 import static org.jfrog.build.extractor.BuildInfoExtractorUtils.getTypeString;
@@ -39,16 +36,13 @@ import static org.jfrog.build.extractor.BuildInfoExtractorUtils.getTypeString;
 /**
  * @author yahavi
  */
-public class ArtifactoryExecutionListener extends AbstractExecutionListener {
+public class ArtifactoryExecutionListener extends AbstractExecutionListener implements BuildInfoExtractor<ExecutionEvent> {
 
-    private final ThreadLocal<Set<Artifact>> currentModuleDependencies = ThreadLocal.withInitial(() -> Collections.synchronizedSet(new HashSet<>()));
-    private final ThreadLocal<Set<Artifact>> currentModuleArtifacts = ThreadLocal.withInitial(() -> Collections.synchronizedSet(new HashSet<>()));
-    private final Set<Artifact> resolvedArtifacts = Collections.synchronizedSet(new HashSet<>());
     private final Map<String, DeployDetails> deployableArtifactBuilderMap = Maps.newConcurrentMap();
 
     private final ArtifactoryClientConfiguration conf;
     @SuppressWarnings("unused")
-    private BuildInfoMavenBuilder buildInfoBuilder;
+    private final BuildInfoMavenBuilder buildInfoBuilder;
 
     private final Log logger;
 
@@ -71,20 +65,15 @@ public class ArtifactoryExecutionListener extends AbstractExecutionListener {
         moduleBuilder.properties(project.getProperties());
 
         // Fill currentModuleArtifacts
-        addArtifacts(project);
+        Set<Artifact> artifacts = getArtifacts(project);
 
         // Fill currentModuleDependencies
-        addDependencies(project);
+        Set<Artifact> dependencies = getDependencies(project);
 
         // Build module
-        addArtifactsToCurrentModule(project, moduleBuilder);
-        addDependenciesToCurrentModule(moduleBuilder);
+        addArtifactsToCurrentModule(project, moduleBuilder, artifacts);
+        addDependenciesToCurrentModule(moduleBuilder, dependencies);
         buildInfoBuilder.addModule(moduleBuilder.build());
-
-        // Cleanup
-        currentModuleArtifacts.remove();
-        currentModuleDependencies.remove();
-        resolvedArtifacts.clear();
     }
 
     /**
@@ -94,34 +83,50 @@ public class ArtifactoryExecutionListener extends AbstractExecutionListener {
      */
     @Override
     public void sessionEnded(ExecutionEvent event) {
-        System.out.println(event);
+        Build build = extract(event);
+        if (build != null) {
+            File basedir = event.getSession().getTopLevelProject().getBasedir();
+            new BuildDeployer(logger).deploy(build, conf, deployableArtifactBuilderMap, basedir);
+        }
+        deployableArtifactBuilderMap.clear();
     }
 
-    private void addArtifacts(MavenProject project) {
-        Set<Artifact> artifacts = currentModuleArtifacts.get();
-        artifacts.add(project.getArtifact());
+    @Override
+    public Build extract(ExecutionEvent event) {
+        MavenSession session = event.getSession();
+        if (session.getResult().hasExceptions()) {
+            return null;
+        }
+        if (conf.isIncludeEnvVars()) {
+            Properties envProperties = new Properties();
+            envProperties.putAll(conf.getAllProperties());
+            envProperties = BuildInfoExtractorUtils.getEnvProperties(envProperties, conf.getLog());
+            envProperties.forEach(buildInfoBuilder::addProperty);
+        }
+        long time = new Date().getTime() - session.getRequest().getStartTime().getTime();
+        return buildInfoBuilder.durationMillis(time).build();
+    }
+
+    private Set<Artifact> getArtifacts(MavenProject project) {
+        Set<Artifact> artifacts = Sets.newHashSet(project.getArtifact());
         artifacts.addAll(project.getAttachedArtifacts());
+        return artifacts;
     }
 
-    private void addDependencies(MavenProject project) {
-        Set<Artifact> moduleDependencies = currentModuleDependencies.get();
-        Set<Artifact> currentDependencies = Sets.newHashSet(moduleDependencies);
-        moduleDependencies.clear();
-
+    private Set<Artifact> getDependencies(MavenProject project) {
+        Set<Artifact> dependencies = Sets.newHashSet();
         for (Artifact artifact : project.getArtifacts()) {
             String classifier = StringUtils.defaultString(artifact.getClassifier(), "");
             String scope = StringUtils.defaultIfBlank(artifact.getScope(), Artifact.SCOPE_COMPILE);
             Artifact art = new DefaultArtifact(artifact.getGroupId(), artifact.getArtifactId(),
                     artifact.getVersion(), scope, artifact.getType(), classifier, artifact.getArtifactHandler());
             art.setFile(artifact.getFile());
-            moduleDependencies.add(art);
+            dependencies.add(art);
         }
-        moduleDependencies.addAll(currentDependencies);
-        moduleDependencies.addAll(resolvedArtifacts);
+        return dependencies;
     }
 
-    private void addArtifactsToCurrentModule(MavenProject project, ModuleBuilder moduleBuilder) {
-        Set<Artifact> moduleArtifacts = currentModuleArtifacts.get();
+    private void addArtifactsToCurrentModule(MavenProject project, ModuleBuilder moduleBuilder, Set<Artifact> artifacts) {
         ArtifactoryClientConfiguration.PublisherHandler publisher = conf.publisher;
         IncludeExcludePatterns patterns = new IncludeExcludePatterns(
                 publisher.getIncludePatterns(), publisher.getExcludePatterns());
@@ -131,7 +136,7 @@ public class ArtifactoryExecutionListener extends AbstractExecutionListener {
         Artifact nonPomArtifact = null;
         String pomFileName = null;
 
-        for (Artifact moduleArtifact : moduleArtifacts) {
+        for (Artifact moduleArtifact : artifacts) {
             String artifactId = moduleArtifact.getArtifactId();
             String artifactVersion = moduleArtifact.getVersion();
             String artifactClassifier = moduleArtifact.getClassifier();
@@ -178,9 +183,8 @@ public class ArtifactoryExecutionListener extends AbstractExecutionListener {
         }
     }
 
-    private void addDependenciesToCurrentModule(ModuleBuilder moduleBuilder) {
-        Set<Artifact> moduleDependencies = currentModuleDependencies.get();
-        for (Artifact dependency : moduleDependencies) {
+    private void addDependenciesToCurrentModule(ModuleBuilder moduleBuilder, Set<Artifact> dependencies) {
+        for (Artifact dependency : dependencies) {
             File depFile = dependency.getFile();
             DependencyBuilder dependencyBuilder = new DependencyBuilder()
                     .id(getModuleIdString(dependency.getGroupId(), dependency.getArtifactId(), dependency.getVersion()))

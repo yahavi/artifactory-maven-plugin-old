@@ -1,5 +1,6 @@
 package org.jfrog.buildinfo;
 
+import com.google.common.collect.Lists;
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.lifecycle.internal.DefaultExecutionEventCatapult;
@@ -21,6 +22,8 @@ import java.util.Map;
 @SuppressWarnings("unused")
 @Mojo(name = "publish", defaultPhase = LifecyclePhase.VALIDATE, threadSafe = true)
 public class PublishMojo extends AbstractMojo {
+
+    private static final List<String> deployGoals = Lists.newArrayList("deploy", "maven-deploy-plugin");
 
     @Parameter(required = true, defaultValue = "${project}")
     MavenProject project;
@@ -58,6 +61,28 @@ public class PublishMojo extends AbstractMojo {
             mavenProject.setReleaseArtifactRepository(helper.getReleaseRepository());
             mavenProject.setSnapshotArtifactRepository(helper.getSnapshotRepository());
         }
-        session.getRequest().setExecutionListener(new ArtifactoryExecutionListener(session, getLog(), artifactory.delegate));
+        skipDefaultDeploy();
+        if (session.getGoals().stream().anyMatch(deployGoals::contains)) {
+            session.getRequest().setExecutionListener(new ArtifactoryExecutionListener(session, getLog(), artifactory.delegate));
+        }
     }
+
+    private void skipDefaultDeploy() {
+        // For Maven versions < 3.3.3:
+        session.getExecutionProperties().setProperty("maven.deploy.skip", Boolean.TRUE.toString());
+        // For Maven versions >= 3.3.3:
+        session.getUserProperties().put("maven.deploy.skip", Boolean.TRUE.toString());
+    }
+
+//    private void completeConfig() {
+//        buildInfo.setBuildName();
+//        buildInfo.buildName = helper.updateValue(buildInfo.buildName) ?:project.artifactId
+//        buildInfo.buildNumber = helper.updateValue(buildInfo.buildNumber) ?:buildInfo.buildTimestamp
+//        buildInfo.buildAgentName = 'Maven'
+//        buildInfo.buildAgentVersion = helper.mavenVersion()
+//
+//        if (buildInfo.getBuildRetentionDays() != null) {
+//            buildInfo.setBuildRetentionMinimumDate(buildInfo.getBuildRetentionDays().toString());
+//        }
+//    }
 }
