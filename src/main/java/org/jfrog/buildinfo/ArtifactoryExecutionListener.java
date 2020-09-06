@@ -92,6 +92,11 @@ public class ArtifactoryExecutionListener extends AbstractExecutionListener impl
         addDependencies(event.getProject());
     }
 
+    @Override
+    public void mojoFailed(ExecutionEvent event) {
+        addDependencies(event.getProject());
+    }
+
     /**
      * Build and publish build info
      *
@@ -149,15 +154,16 @@ public class ArtifactoryExecutionListener extends AbstractExecutionListener impl
         moduleDependencies.clear();
         moduleDependencies.addAll(dependencies);
         moduleDependencies.addAll(tempSet);
-//        dependencies.addAll(resolvedArtifacts);
+        if (conf.publisher.isRecordAllDependencies()) {
+            moduleDependencies.addAll(resolvedArtifacts);
+        }
     }
 
     private void addArtifactsToCurrentModule(MavenProject project, ModuleBuilder moduleBuilder) {
         Set<Artifact> artifacts = currentModuleArtifacts.get();
 
         ArtifactoryClientConfiguration.PublisherHandler publisher = conf.publisher;
-        IncludeExcludePatterns patterns = new IncludeExcludePatterns(
-                publisher.getIncludePatterns(), publisher.getExcludePatterns());
+        IncludeExcludePatterns patterns = new IncludeExcludePatterns(publisher.getIncludePatterns(), publisher.getExcludePatterns());
         boolean excludeArtifactsFromBuild = publisher.isFilterExcludedArtifactsFromBuild();
 
         boolean pomFileAdded = false;
