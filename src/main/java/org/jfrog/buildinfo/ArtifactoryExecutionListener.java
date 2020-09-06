@@ -24,6 +24,7 @@ import org.jfrog.build.extractor.clientConfiguration.ArtifactoryClientConfigurat
 import org.jfrog.build.extractor.clientConfiguration.IncludeExcludePatterns;
 import org.jfrog.build.extractor.clientConfiguration.PatternMatcher;
 import org.jfrog.build.extractor.clientConfiguration.deploy.DeployDetails;
+import org.jfrog.buildinfo.types.ModuleArtifacts;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,7 +40,10 @@ import static org.jfrog.build.extractor.BuildInfoExtractorUtils.getTypeString;
 public class ArtifactoryExecutionListener extends AbstractExecutionListener implements BuildInfoExtractor<ExecutionEvent> {
 
     private final Map<String, DeployDetails> deployableArtifactBuilderMap = Maps.newConcurrentMap();
-    private Set<Artifact> resolvedArtifacts = Collections.synchronizedSet(new HashSet<>());
+    private final Set<Artifact> resolvedArtifacts = Collections.synchronizedSet(new HashSet<>());
+    private final ModuleArtifacts currentModuleDependencies = new ModuleArtifacts();
+    private final ModuleArtifacts currentModuleArtifacts = new ModuleArtifacts();
+    private final ThreadLocal<ModuleBuilder> currentModule = new ThreadLocal<>();
 
     private final ArtifactoryClientConfiguration conf;
     @SuppressWarnings("unused")
@@ -66,17 +70,26 @@ public class ArtifactoryExecutionListener extends AbstractExecutionListener impl
         moduleBuilder.properties(project.getProperties());
 
         // Fill currentModuleArtifacts
-        Set<Artifact> artifacts = getArtifacts(project);
+        addArtifacts(project);
 
         // Fill currentModuleDependencies
-        Set<Artifact> dependencies = getDependencies(project);
+        addDependencies(project);
 
         // Build module
-        addArtifactsToCurrentModule(project, moduleBuilder, artifacts);
-        addDependenciesToCurrentModule(moduleBuilder, dependencies);
+        addArtifactsToCurrentModule(project, moduleBuilder);
+        addDependenciesToCurrentModule(moduleBuilder);
         buildInfoBuilder.addModule(moduleBuilder.build());
 
+        // Clean up
+        currentModule.remove();
+        currentModuleArtifacts.remove();
+        currentModuleDependencies.remove();
         resolvedArtifacts.clear();
+    }
+
+    @Override
+    public void mojoSucceeded(ExecutionEvent event) {
+        addDependencies(event.getProject());
     }
 
     /**
@@ -116,13 +129,12 @@ public class ArtifactoryExecutionListener extends AbstractExecutionListener impl
         }
     }
 
-    private Set<Artifact> getArtifacts(MavenProject project) {
-        Set<Artifact> artifacts = Sets.newHashSet(project.getArtifact());
-        artifacts.addAll(project.getAttachedArtifacts());
-        return artifacts;
+    private void addArtifacts(MavenProject project) {
+        currentModuleArtifacts.add(project.getArtifact());
+        currentModuleArtifacts.addAll(project.getAttachedArtifacts());
     }
 
-    private Set<Artifact> getDependencies(MavenProject project) {
+    private void addDependencies(MavenProject project) {
         Set<Artifact> dependencies = Sets.newHashSet();
         for (Artifact artifact : project.getArtifacts()) {
             String classifier = StringUtils.defaultString(artifact.getClassifier(), "");
@@ -132,11 +144,17 @@ public class ArtifactoryExecutionListener extends AbstractExecutionListener impl
             art.setFile(artifact.getFile());
             dependencies.add(art);
         }
-        dependencies.addAll(resolvedArtifacts);
-        return dependencies;
+        Set<Artifact> moduleDependencies = currentModuleDependencies.getOrCreate();
+        Set<Artifact> tempSet = Sets.newHashSet(moduleDependencies);
+        moduleDependencies.clear();
+        moduleDependencies.addAll(dependencies);
+        moduleDependencies.addAll(tempSet);
+//        dependencies.addAll(resolvedArtifacts);
     }
 
-    private void addArtifactsToCurrentModule(MavenProject project, ModuleBuilder moduleBuilder, Set<Artifact> artifacts) {
+    private void addArtifactsToCurrentModule(MavenProject project, ModuleBuilder moduleBuilder) {
+        Set<Artifact> artifacts = currentModuleArtifacts.get();
+
         ArtifactoryClientConfiguration.PublisherHandler publisher = conf.publisher;
         IncludeExcludePatterns patterns = new IncludeExcludePatterns(
                 publisher.getIncludePatterns(), publisher.getExcludePatterns());
@@ -193,7 +211,8 @@ public class ArtifactoryExecutionListener extends AbstractExecutionListener impl
         }
     }
 
-    private void addDependenciesToCurrentModule(ModuleBuilder moduleBuilder, Set<Artifact> dependencies) {
+    private void addDependenciesToCurrentModule(ModuleBuilder moduleBuilder) {
+        Set<Artifact> dependencies = currentModuleDependencies.get();
         for (Artifact dependency : dependencies) {
             File depFile = dependency.getFile();
             DependencyBuilder dependencyBuilder = new DependencyBuilder()
@@ -209,7 +228,7 @@ public class ArtifactoryExecutionListener extends AbstractExecutionListener impl
     }
 
     private void setDependencyChecksums(File dependencyFile, DependencyBuilder dependencyBuilder) {
-        if (dependencyFile == null || dependencyFile.isFile()) {
+        if (dependencyFile == null || !dependencyFile.isFile()) {
             return;
         }
         try {
