@@ -21,6 +21,7 @@ public class ArtifactoryRepositoryListener extends AbstractRepositoryListener {
 
     private ArtifactoryExecutionListener executionListener;
 
+    @SuppressWarnings("unused")
     @Inject
     private Logger logger;
 
@@ -34,12 +35,11 @@ public class ArtifactoryRepositoryListener extends AbstractRepositoryListener {
         String scope = getScopeByRequestContext(requestContext);
         org.apache.maven.artifact.Artifact artifact = toMavenArtifact(event.getArtifact(), scope);
         if (event.getRepository() != null) {
-            logger.debug("[buildinfo] Resolved artifact: " + artifact + " from: " + event.getRepository() + " Context is: " + requestContext);
+            logger.debug("[buildinfo] Resolved artifact: " + artifact + " from: " + event.getRepository() + ". Context is: " + requestContext);
             executionListener.artifactResolved(artifact);
-        } else {
-            logger.debug("[buildinfo] Could not resolve artifact: " + artifact);
+            return;
         }
-        super.artifactResolved(event);
+        logger.debug("[buildinfo] Could not resolve artifact: " + artifact);
     }
 
     /**
@@ -56,12 +56,6 @@ public class ArtifactoryRepositoryListener extends AbstractRepositoryListener {
     }
 
     public String getScopeByRequestContext(String requestContext) {
-        if (requestContext == null) {
-            return "project";
-        }
-        if ("plugin".equals(requestContext)) {
-            return "build";
-        }
-        return "project";
+        return StringUtils.equals(requestContext, "plugin") ? "build" : "project";
     }
 }

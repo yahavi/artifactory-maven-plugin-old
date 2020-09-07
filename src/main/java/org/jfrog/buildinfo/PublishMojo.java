@@ -68,8 +68,6 @@ public class PublishMojo extends AbstractMojo {
         for (MavenProject mavenProject : session.getProjects()) {
             mavenProject.setPluginArtifactRepositories(resolutionRepositories);
             mavenProject.setRemoteArtifactRepositories(resolutionRepositories);
-            mavenProject.setReleaseArtifactRepository(helper.getReleaseRepository());
-            mavenProject.setSnapshotArtifactRepository(helper.getSnapshotRepository());
         }
         skipDefaultDeploy();
         if (session.getGoals().stream().anyMatch(deployGoals::contains)) {

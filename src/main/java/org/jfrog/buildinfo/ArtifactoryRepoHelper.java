@@ -19,8 +19,6 @@ public class ArtifactoryRepoHelper {
 
     private List<ArtifactRepository> resolutionRepositories;
     private final ResolutionHelper resolutionHelper;
-    private ArtifactRepository snapshotRepository;
-    private ArtifactRepository releaseRepository;
     private final Log logger;
 
     public ArtifactoryRepoHelper(Log logger, MavenSession session, ArtifactoryClientConfiguration clientConfiguration) {
@@ -97,16 +95,4 @@ public class ArtifactoryRepoHelper {
     List<ArtifactRepository> getResolutionRepositories() {
         return resolutionRepositories;
     }
-
-    ArtifactRepository getSnapshotRepository() {
-        if (snapshotRepository != null) {
-            return snapshotRepository;
-        }
-        return releaseRepository;
-    }
-
-    ArtifactRepository getReleaseRepository() {
-        return releaseRepository;
-    }
-
 }

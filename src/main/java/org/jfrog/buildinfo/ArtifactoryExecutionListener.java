@@ -44,15 +44,15 @@ public class ArtifactoryExecutionListener extends AbstractExecutionListener impl
     private final ModuleArtifacts currentModuleDependencies = new ModuleArtifacts();
     private final ModuleArtifacts currentModuleArtifacts = new ModuleArtifacts();
     private final ThreadLocal<ModuleBuilder> currentModule = new ThreadLocal<>();
-
     private final ArtifactoryClientConfiguration conf;
-    @SuppressWarnings("unused")
     private final BuildInfoMavenBuilder buildInfoBuilder;
+    private final BuildDeployer buildDeployer;
 
     private final Log logger;
 
     public ArtifactoryExecutionListener(MavenSession session, Log logger, ArtifactoryClientConfiguration conf) {
         this.buildInfoBuilder = new BuildInfoModelPropertyResolver(logger, session, conf);
+        this.buildDeployer = new BuildDeployer(logger);
         this.logger = logger;
         this.conf = conf;
     }
@@ -107,7 +107,7 @@ public class ArtifactoryExecutionListener extends AbstractExecutionListener impl
         Build build = extract(event);
         if (build != null) {
             File basedir = event.getSession().getTopLevelProject().getBasedir();
-            new BuildDeployer(logger).deploy(build, conf, deployableArtifactBuilderMap, basedir);
+            buildDeployer.deploy(build, conf, deployableArtifactBuilderMap, basedir);
         }
         deployableArtifactBuilderMap.clear();
     }
@@ -218,7 +218,7 @@ public class ArtifactoryExecutionListener extends AbstractExecutionListener impl
     }
 
     private void addDependenciesToCurrentModule(ModuleBuilder moduleBuilder) {
-        Set<Artifact> dependencies = currentModuleDependencies.get();
+        Set<Artifact> dependencies = currentModuleDependencies.getOrCreate();
         for (Artifact dependency : dependencies) {
             File depFile = dependency.getFile();
             DependencyBuilder dependencyBuilder = new DependencyBuilder()
