@@ -4,9 +4,7 @@ import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.project.MavenProject;
 import org.jfrog.build.api.BuildInfoFields;
 import org.jfrog.build.extractor.clientConfiguration.ArtifactoryClientConfiguration;
-import org.junit.Before;
 
-import java.io.File;
 import java.util.List;
 import java.util.Map;
 
@@ -16,17 +14,6 @@ import static org.jfrog.build.extractor.clientConfiguration.ClientProperties.PRO
  * @author yahavi
  */
 public class PublishMojoTest extends ArtifactoryPluginTestCase {
-
-    private final File testPom = new File(getBasedir(), "src/test/resources/maven-example/pom.xml");
-    private PublishMojo mojo;
-
-    @Before
-    public void setUp() throws Exception {
-        super.setUp();
-        mojo = createPublishMojo(testPom);
-        assertNotNull(mojo);
-        mojo.execute();
-    }
 
     public void testArtifactoryConfiguration() {
         Config.Artifactory configArtifactory = mojo.artifactory;

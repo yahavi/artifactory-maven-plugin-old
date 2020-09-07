@@ -22,6 +22,8 @@ import org.eclipse.aether.internal.impl.SimpleLocalRepositoryManagerFactory;
 import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.NoLocalRepositoryManagerException;
 import org.jfrog.buildinfo.resolution.ArtifactoryRepositoryListener;
+import org.jfrog.buildinfo.types.PlexusLogger;
+import org.junit.Before;
 
 import java.io.File;
 import java.text.ParseException;
@@ -35,6 +37,8 @@ import java.util.Map;
  */
 public abstract class ArtifactoryPluginTestCase extends AbstractMojoTestCase {
 
+    private final File testPom = new File(getBasedir(), "src/test/resources/maven-example/pom.xml");
+    PublishMojo mojo;
     static Date TEST_DATE;
 
     static {
@@ -43,6 +47,14 @@ public abstract class ArtifactoryPluginTestCase extends AbstractMojoTestCase {
         } catch (ParseException e) {
             // Ignore
         }
+    }
+
+    @Before
+    public void setUp() throws Exception {
+        super.setUp();
+        mojo = createPublishMojo(testPom);
+        assertNotNull(mojo);
+        mojo.execute();
     }
 
     @Override
@@ -74,7 +86,7 @@ public abstract class ArtifactoryPluginTestCase extends AbstractMojoTestCase {
         return mojo;
     }
 
-    private MavenSession newMavenSession() throws MavenExecutionRequestPopulationException, ComponentLookupException, NoLocalRepositoryManagerException, ParseException {
+    private MavenSession newMavenSession() throws MavenExecutionRequestPopulationException, ComponentLookupException, NoLocalRepositoryManagerException {
         MavenExecutionRequest request = new DefaultMavenExecutionRequest();
         request.setSystemProperties(System.getProperties());
         request.setStartTime(TEST_DATE);

@@ -7,7 +7,7 @@ import org.codehaus.plexus.logging.Logger;
 import org.eclipse.aether.AbstractRepositoryListener;
 import org.eclipse.aether.RepositoryEvent;
 import org.eclipse.aether.resolution.ArtifactRequest;
-import org.jfrog.buildinfo.deployment.ArtifactoryExecutionListener;
+import org.jfrog.buildinfo.deployment.BuildInfoRecorder;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -20,11 +20,12 @@ import javax.inject.Singleton;
 @Singleton
 public class ArtifactoryRepositoryListener extends AbstractRepositoryListener {
 
-    private ArtifactoryExecutionListener executionListener;
+    private BuildInfoRecorder executionListener;
 
     /**
      * Empty constructor for serialization
      */
+    @SuppressWarnings("unused")
     public ArtifactoryRepositoryListener() {
     }
 
@@ -41,7 +42,7 @@ public class ArtifactoryRepositoryListener extends AbstractRepositoryListener {
     @Inject
     private Logger logger;
 
-    public void setExecutionListener(ArtifactoryExecutionListener executionListener) {
+    public void setExecutionListener(BuildInfoRecorder executionListener) {
         this.executionListener = executionListener;
     }
 

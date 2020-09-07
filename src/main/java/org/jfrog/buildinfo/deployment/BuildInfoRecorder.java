@@ -37,24 +37,32 @@ import static org.jfrog.buildinfo.utils.Utils.setChecksums;
 /**
  * @author yahavi
  */
-public class ArtifactoryExecutionListener extends AbstractExecutionListener implements BuildInfoExtractor<ExecutionEvent> {
+public class BuildInfoRecorder extends AbstractExecutionListener implements BuildInfoExtractor<ExecutionEvent> {
 
     private final Map<String, DeployDetails> deployableArtifactBuilderMap = Maps.newConcurrentMap();
     private final Set<Artifact> resolvedArtifacts = Collections.synchronizedSet(new HashSet<>());
     private final ModuleArtifacts currentModuleDependencies = new ModuleArtifacts();
     private final ModuleArtifacts currentModuleArtifacts = new ModuleArtifacts();
     private final ThreadLocal<ModuleBuilder> currentModule = new ThreadLocal<>();
-    private final ArtifactoryClientConfiguration conf;
     private final BuildInfoMavenBuilder buildInfoBuilder;
+    private final ArtifactoryClientConfiguration conf;
     private final BuildDeployer buildDeployer;
 
     private final Log logger;
 
-    public ArtifactoryExecutionListener(MavenSession session, Log logger, ArtifactoryClientConfiguration conf) {
+    public BuildInfoRecorder(MavenSession session, Log logger, ArtifactoryClientConfiguration conf) {
         this.buildInfoBuilder = new BuildInfoModelPropertyResolver(logger, session, conf);
         this.buildDeployer = new BuildDeployer(logger);
         this.logger = logger;
         this.conf = conf;
+    }
+
+    public Set<Artifact> getCurrentModuleDependencies() {
+        return currentModuleDependencies.get();
+    }
+
+    public BuildInfoMavenBuilder getBuildInfoBuilder() {
+        return buildInfoBuilder;
     }
 
     @Override

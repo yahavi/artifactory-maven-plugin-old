@@ -13,7 +13,7 @@ import org.apache.maven.project.MavenProject;
 import org.jfrog.build.api.BuildInfoFields;
 import org.jfrog.build.extractor.clientConfiguration.ArtifactoryClientConfiguration;
 import org.jfrog.build.extractor.clientConfiguration.ClientProperties;
-import org.jfrog.buildinfo.deployment.ArtifactoryExecutionListener;
+import org.jfrog.buildinfo.deployment.BuildInfoRecorder;
 import org.jfrog.buildinfo.resolution.ArtifactoryRepositoryListener;
 import org.jfrog.buildinfo.resolution.ResolutionRepoHelper;
 
@@ -68,7 +68,7 @@ public class PublishMojo extends AbstractMojo {
         if (session.getGoals().stream().anyMatch(goal -> ArrayUtils.contains(DEPLOY_GOALS, goal))) {
             completeConfig();
             addDeployProperties();
-            ArtifactoryExecutionListener executionListener = new ArtifactoryExecutionListener(session, getLog(), artifactory.delegate);
+            BuildInfoRecorder executionListener = new BuildInfoRecorder(session, getLog(), artifactory.delegate);
             repositoryListener.setExecutionListener(executionListener);
             session.getRequest().setExecutionListener(executionListener);
         }
