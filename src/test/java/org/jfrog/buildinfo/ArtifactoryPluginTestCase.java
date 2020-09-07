@@ -24,6 +24,8 @@ import org.eclipse.aether.repository.NoLocalRepositoryManagerException;
 import org.jfrog.buildinfo.resolution.ArtifactoryRepositoryListener;
 
 import java.io.File;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
@@ -32,6 +34,16 @@ import java.util.Map;
  * @author yahavi
  */
 public abstract class ArtifactoryPluginTestCase extends AbstractMojoTestCase {
+
+    static Date TEST_DATE;
+
+    static {
+        try {
+            TEST_DATE = new SimpleDateFormat("dd/MM/yyyy").parse("01/01/2020");
+        } catch (ParseException e) {
+            // Ignore
+        }
+    }
 
     @Override
     protected String getPluginDescriptorLocation() {
@@ -51,7 +63,7 @@ public abstract class ArtifactoryPluginTestCase extends AbstractMojoTestCase {
         }
     }
 
-    PublishMojo getArtifactoryPublishMojo(File pom) throws Exception {
+    PublishMojo createPublishMojo(File pom) throws Exception {
         ProjectBuildingRequest buildingRequest = newMavenSession().getProjectBuildingRequest();
         ProjectBuilder projectBuilder = lookup(ProjectBuilder.class);
         MavenProject project = projectBuilder.build(pom, buildingRequest).getProject();
@@ -62,10 +74,10 @@ public abstract class ArtifactoryPluginTestCase extends AbstractMojoTestCase {
         return mojo;
     }
 
-    private MavenSession newMavenSession() throws MavenExecutionRequestPopulationException, ComponentLookupException, NoLocalRepositoryManagerException {
+    private MavenSession newMavenSession() throws MavenExecutionRequestPopulationException, ComponentLookupException, NoLocalRepositoryManagerException, ParseException {
         MavenExecutionRequest request = new DefaultMavenExecutionRequest();
         request.setSystemProperties(System.getProperties());
-        request.setStartTime(new Date());
+        request.setStartTime(TEST_DATE);
         MavenExecutionRequestPopulator requestPopulator = getContainer().lookup(MavenExecutionRequestPopulator.class);
         requestPopulator.populateDefaults(request);
 
@@ -84,7 +96,12 @@ public abstract class ArtifactoryPluginTestCase extends AbstractMojoTestCase {
         mojo.buildInfo = objectMapper.readValue(configuration.getChild("buildInfo").toString(), Config.BuildInfo.class);
         mojo.publisher = objectMapper.readValue(configuration.getChild("publisher").toString(), Config.Publisher.class);
         mojo.resolver = objectMapper.readValue(configuration.getChild("resolver").toString(), Config.Resolver.class);
-        Log log = new SystemStreamLog();
+        Log log = new SystemStreamLog() {
+            @Override
+            public void debug(CharSequence content) {
+                // Do nothing
+            }
+        };
         mojo.setLog(log);
         mojo.repositoryListener = new ArtifactoryRepositoryListener(new PlexusLogger(log));
     }

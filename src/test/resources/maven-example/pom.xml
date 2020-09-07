@@ -63,32 +63,36 @@
                         </goals>
                         <configuration>
                             <deployProperties>
-                                <gradle>awesome</gradle>
+                                <propKey>propVal</propKey>
                             </deployProperties>
                             <artifactory>
                                 <includeEnvVars>true</includeEnvVars>
                                 <envVarsExcludePatterns>*password*,*secret*,*key*,*token*,*passphrase*</envVarsExcludePatterns>
+                                <envVarsIncludePatterns>*</envVarsIncludePatterns>
                                 <timeoutSec>60</timeoutSec>
                             </artifactory>
                             <resolver>
-                                <contextUrl>https://ecosysjfrog.jfrog.io/artifactory</contextUrl>
-                                <username>yahavi</username>
-                                <password>AKCp5Zm7t7zzGwDVMuonfJwCmiX2x1UkKJA3ZKRhqLZdDFd5NWGDmbw8eFhVJtF5M2UBmz26J</password>
+                                <contextUrl>http://1.2.3.4/artifactory</contextUrl>
+                                <username>admin</username>
+                                <password>password</password>
                                 <repoKey>libs-release</repoKey>
                                 <downloadSnapshotRepoKey>libs-snapshot</downloadSnapshotRepoKey>
                             </resolver>
                             <publisher>
-                                <contextUrl>https://ecosysjfrog.jfrog.io/artifactory</contextUrl>
-                                <username>yahavi</username>
-                                <password>AKCp5Zm7t7zzGwDVMuonfJwCmiX2x1UkKJA3ZKRhqLZdDFd5NWGDmbw8eFhVJtF5M2UBmz26J</password>
+                                <contextUrl>http://1.2.3.4/artifactory</contextUrl>
+                                <username>admin</username>
+                                <password>password</password>
                                 <excludePatterns>*-tests.jar</excludePatterns>
                                 <repoKey>libs-release-local</repoKey>
                                 <snapshotRepoKey>libs-snapshot-local</snapshotRepoKey>
                             </publisher>
                             <buildInfo>
-                                <buildName>plugin-demo</buildName>
-                                <buildNumber>${buildnumber}</buildNumber>
-                                <buildUrl>http://build-url.org</buildUrl>
+                                <buildName>buildName</buildName>
+                                <buildNumber>1</buildNumber>
+                                <buildUrl>http://1.2.3.4</buildUrl>
+                                <agentName>agentName</agentName>
+                                <agentVersion>2</agentVersion>
+                                <buildRetentionMaxDays>5</buildRetentionMaxDays>
                             </buildInfo>
                         </configuration>
                     </execution>
