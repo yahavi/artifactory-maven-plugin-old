@@ -1,4 +1,4 @@
-package org.jfrog.buildinfo;
+package org.jfrog.buildinfo.utils;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.Maven;
@@ -19,7 +19,7 @@ import java.util.Properties;
 public class Utils {
 
     public static void setChecksums(File dependencyFile, BaseBuildFileBean buildFile, Log logger) {
-        if (dependencyFile == null || !dependencyFile.isFile()) {
+        if (!isFile(dependencyFile)) {
             return;
         }
         try {
@@ -62,5 +62,9 @@ public class Utils {
             throw new RuntimeException("Could not extract Maven version: no version property found in the resource 'org/apache/maven/messages/build.properties' or or 'META-INF/maven/org.apache.maven/maven-core/pom.properties'");
         }
         return version;
+    }
+
+    public static boolean isFile(File file) {
+        return file != null && file.isFile();
     }
 }

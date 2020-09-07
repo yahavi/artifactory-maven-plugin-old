@@ -1,4 +1,4 @@
-package org.jfrog.buildinfo;
+package org.jfrog.buildinfo.deployment;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -31,7 +31,8 @@ import java.util.*;
 
 import static org.jfrog.build.extractor.BuildInfoExtractorUtils.getModuleIdString;
 import static org.jfrog.build.extractor.BuildInfoExtractorUtils.getTypeString;
-import static org.jfrog.buildinfo.Utils.setChecksums;
+import static org.jfrog.buildinfo.utils.Utils.isFile;
+import static org.jfrog.buildinfo.utils.Utils.setChecksums;
 
 /**
  * @author yahavi
@@ -59,14 +60,9 @@ public class ArtifactoryExecutionListener extends AbstractExecutionListener impl
     @Override
     public void projectSucceeded(ExecutionEvent event) {
         MavenProject project = event.getProject();
-        if (project == null) {
-            logger.warn("Skipping Artifactory Build-Info module initialization: Null project.");
-            return;
-        }
-
-        ModuleBuilder moduleBuilder = new ModuleBuilder();
-        moduleBuilder.id(getModuleIdString(project.getGroupId(), project.getArtifactId(), project.getVersion()));
-        moduleBuilder.properties(project.getProperties());
+        ModuleBuilder moduleBuilder = new ModuleBuilder()
+                .id(getModuleIdString(project.getGroupId(), project.getArtifactId(), project.getVersion()))
+                .properties(project.getProperties());
 
         // Fill currentModuleArtifacts
         addArtifacts(project);
@@ -196,7 +192,7 @@ public class ArtifactoryExecutionListener extends AbstractExecutionListener impl
             org.jfrog.build.api.Artifact artifact = new ArtifactBuilder(artifactName).type(type).build();
             String groupId = moduleArtifact.getGroupId();
             String deploymentPath = getDeploymentPath(groupId, artifactId, artifactVersion, artifactClassifier, artifactExtension);
-            if (artifactFile != null && artifactFile.isFile()) {
+            if (isFile(artifactFile)) {
                 boolean pathConflicts = PatternMatcher.pathConflicts(deploymentPath, patterns);
                 addArtifactToBuildInfo(artifact, pathConflicts, excludeArtifactsFromBuild, moduleBuilder);
                 addDeployableArtifact(moduleBuilder, artifact, artifactFile, pathConflicts, moduleArtifact.getGroupId(), artifactId, artifactVersion, artifactClassifier, artifactExtension);
@@ -255,7 +251,7 @@ public class ArtifactoryExecutionListener extends AbstractExecutionListener impl
             File pomFile = ((ProjectArtifactMetadata) metadata).getFile();
             org.jfrog.build.api.Artifact pomArtifact = artifactBuilder.build();
 
-            if (pomFile != null && pomFile.isFile()) {
+            if (isFile(pomFile)) {
                 boolean pathConflicts = PatternMatcher.pathConflicts(deploymentPath, patterns);
                 addArtifactToBuildInfo(pomArtifact, pathConflicts, excludeArtifactsFromBuild, module);
                 addDeployableArtifact(moduleBuilder, pomArtifact, pomFile, pathConflicts, nonPomArtifact.getGroupId(), nonPomArtifact.getArtifactId(), nonPomArtifact.getVersion(), nonPomArtifact.getClassifier(), "pom");
@@ -284,9 +280,9 @@ public class ArtifactoryExecutionListener extends AbstractExecutionListener impl
     private void addArtifactToBuildInfo(org.jfrog.build.api.Artifact artifact, boolean pathConflicts, boolean isFilterExcludedArtifactsFromBuild, ModuleBuilder module) {
         if (isFilterExcludedArtifactsFromBuild && pathConflicts) {
             module.addExcludedArtifact(artifact);
-        } else {
-            module.addArtifact(artifact);
+            return;
         }
+        module.addArtifact(artifact);
     }
 
     private void addDeployableArtifact(ModuleBuilder moduleBuilder, org.jfrog.build.api.Artifact artifact, File artifactFile, boolean pathConflicts,

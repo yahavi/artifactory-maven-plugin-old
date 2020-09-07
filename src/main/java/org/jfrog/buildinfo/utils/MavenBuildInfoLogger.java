@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jfrog.buildinfo;
+package org.jfrog.buildinfo.utils;
 
 import org.jfrog.build.api.util.Log;
 

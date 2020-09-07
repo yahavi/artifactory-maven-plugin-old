@@ -1,4 +1,4 @@
-package org.jfrog.buildinfo;
+package org.jfrog.buildinfo.resolution;
 
 import com.google.common.collect.Lists;
 import org.apache.commons.lang.StringUtils;
@@ -15,13 +15,13 @@ import org.jfrog.build.extractor.clientConfiguration.ArtifactoryClientConfigurat
 import java.util.List;
 import java.util.Properties;
 
-public class ArtifactoryRepoHelper {
+public class ResolutionRepoHelper {
 
     private List<ArtifactRepository> resolutionRepositories;
     private final ResolutionHelper resolutionHelper;
     private final Log logger;
 
-    public ArtifactoryRepoHelper(Log logger, MavenSession session, ArtifactoryClientConfiguration clientConfiguration) {
+    public ResolutionRepoHelper(Log logger, MavenSession session, ArtifactoryClientConfiguration clientConfiguration) {
         this.logger = logger;
         Properties allMavenProps = new Properties() {{
             putAll(session.getSystemProperties());
@@ -92,7 +92,7 @@ public class ArtifactoryRepoHelper {
         resolutionRepositories = tempRepositories;
     }
 
-    List<ArtifactRepository> getResolutionRepositories() {
+    public List<ArtifactRepository> getResolutionRepositories() {
         return resolutionRepositories;
     }
 }

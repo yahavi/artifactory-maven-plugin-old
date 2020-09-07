@@ -1,4 +1,4 @@
-package org.jfrog.buildinfo;
+package org.jfrog.buildinfo.deployment;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.execution.MavenSession;
@@ -12,7 +12,7 @@ import java.util.Date;
 import java.util.Map;
 
 import static org.jfrog.build.api.BuildInfoFields.*;
-import static org.jfrog.buildinfo.Utils.getMavenVersion;
+import static org.jfrog.buildinfo.utils.Utils.getMavenVersion;
 
 
 /**

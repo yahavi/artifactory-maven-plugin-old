@@ -17,6 +17,7 @@ public class Config {
         ArtifactoryClientConfiguration delegate = CLIENT_CONFIGURATION;
     }
 
+    @SuppressWarnings("unused")
     public static class Resolver {
         @Delegate(types = {
                 ArtifactoryClientConfiguration.ResolverHandler.class,
@@ -26,6 +27,7 @@ public class Config {
         ArtifactoryClientConfiguration.ResolverHandler delegate = CLIENT_CONFIGURATION.resolver;
     }
 
+    @SuppressWarnings("unused")
     public static class Publisher {
         @Delegate(types = {
                 ArtifactoryClientConfiguration.PublisherHandler.class,

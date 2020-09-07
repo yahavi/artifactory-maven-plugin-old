@@ -1,4 +1,4 @@
-package org.jfrog.buildinfo;
+package org.jfrog.buildinfo.resolution;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.artifact.Artifact;
@@ -7,6 +7,7 @@ import org.codehaus.plexus.logging.Logger;
 import org.eclipse.aether.AbstractRepositoryListener;
 import org.eclipse.aether.RepositoryEvent;
 import org.eclipse.aether.resolution.ArtifactRequest;
+import org.jfrog.buildinfo.deployment.ArtifactoryExecutionListener;
 
 import javax.inject.Inject;
 import javax.inject.Named;

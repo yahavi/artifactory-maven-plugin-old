@@ -1,4 +1,4 @@
-package org.jfrog.buildinfo;
+package org.jfrog.buildinfo.deployment;
 
 import org.apache.commons.collections4.MapUtils;
 import org.apache.maven.plugin.logging.Log;
@@ -15,7 +15,7 @@ import org.jfrog.build.extractor.retention.Utils;
 import java.io.File;
 import java.util.*;
 
-import static org.jfrog.buildinfo.Utils.setChecksums;
+import static org.jfrog.buildinfo.utils.Utils.setChecksums;
 
 /**
  * @author yahavi

@@ -1,8 +1,9 @@
-package org.jfrog.buildinfo;
+package org.jfrog.buildinfo.resolution;
 
 import org.apache.maven.plugin.logging.Log;
 import org.jfrog.build.extractor.BuildInfoExtractorUtils;
 import org.jfrog.build.extractor.clientConfiguration.ArtifactoryClientConfiguration;
+import org.jfrog.buildinfo.utils.MavenBuildInfoLogger;
 
 import java.util.Properties;
 

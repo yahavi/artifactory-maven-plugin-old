@@ -14,13 +14,16 @@ import org.codehaus.plexus.component.annotations.Requirement;
 import org.jfrog.build.api.BuildInfoFields;
 import org.jfrog.build.extractor.clientConfiguration.ArtifactoryClientConfiguration;
 import org.jfrog.build.extractor.clientConfiguration.ClientProperties;
+import org.jfrog.buildinfo.deployment.ArtifactoryExecutionListener;
+import org.jfrog.buildinfo.resolution.ArtifactoryRepositoryListener;
+import org.jfrog.buildinfo.resolution.ResolutionRepoHelper;
 
 import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-import static org.jfrog.buildinfo.Utils.getMavenVersion;
+import static org.jfrog.buildinfo.utils.Utils.getMavenVersion;
 
 /**
  * Artifactory plugin creating and deploying JSON build data together with build artifacts.
@@ -41,7 +44,7 @@ public class PublishMojo extends AbstractMojo {
     private ArtifactoryRepositoryListener repositoryListener;
 
     @Requirement
-    ArtifactoryRepoHelper resolversHelper;
+    ResolutionRepoHelper resolversHelper;
 
     @Parameter
     Map<String, String> deployProperties;
@@ -59,7 +62,7 @@ public class PublishMojo extends AbstractMojo {
     Config.Resolver resolver;
 
     public void execute() {
-        ArtifactoryRepoHelper helper = new ArtifactoryRepoHelper(getLog(), session, artifactory.delegate);
+        ResolutionRepoHelper helper = new ResolutionRepoHelper(getLog(), session, artifactory.delegate);
         List<ArtifactRepository> resolutionRepositories = helper.getResolutionRepositories();
         for (MavenProject mavenProject : session.getProjects()) {
             mavenProject.setPluginArtifactRepositories(resolutionRepositories);
