@@ -49,7 +49,7 @@ public class ArtifactoryRepositoryListener extends AbstractRepositoryListener {
         if (art == null) {
             return null;
         }
-        String classifier = StringUtils.defaultString(art.getClassifier(), "");
+        String classifier = StringUtils.defaultString(art.getClassifier());
         DefaultArtifact artifact = new DefaultArtifact(art.getGroupId(), art.getArtifactId(), art.getVersion(), scope, art.getExtension(), classifier, null);
         artifact.setFile(art.getFile());
         return artifact;

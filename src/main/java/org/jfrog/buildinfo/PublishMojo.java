@@ -1,12 +1,9 @@
 package org.jfrog.buildinfo;
 
-import com.google.common.collect.Lists;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.maven.Maven;
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.execution.MavenSession;
-import org.apache.maven.lifecycle.internal.DefaultExecutionEventCatapult;
-import org.apache.maven.lifecycle.internal.ExecutionEventCatapult;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
@@ -23,14 +20,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import static org.jfrog.buildinfo.Utils.getMavenVersion;
+
 /**
  * Artifactory plugin creating and deploying JSON build data together with build artifacts.
  */
 @SuppressWarnings("unused")
 @Mojo(name = "publish", defaultPhase = LifecyclePhase.VALIDATE, threadSafe = true)
 public class PublishMojo extends AbstractMojo {
-
-    private static final List<String> deployGoals = Lists.newArrayList("deploy", "maven-deploy-plugin");
+    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+    private static final String[] DEPLOY_GOALS = {"deploy", "maven-deploy-plugin"};
 
     @Parameter(required = true, defaultValue = "${project}")
     MavenProject project;
@@ -40,9 +39,6 @@ public class PublishMojo extends AbstractMojo {
 
     @Component(role = ArtifactoryRepositoryListener.class)
     private ArtifactoryRepositoryListener repositoryListener;
-
-    @Component(role = ExecutionEventCatapult.class)
-    private DefaultExecutionEventCatapult eventCatapult;
 
     @Requirement
     ArtifactoryRepoHelper resolversHelper;
@@ -70,15 +66,16 @@ public class PublishMojo extends AbstractMojo {
             mavenProject.setRemoteArtifactRepositories(resolutionRepositories);
         }
         skipDefaultDeploy();
-        if (session.getGoals().stream().anyMatch(deployGoals::contains)) {
+        if (session.getGoals().stream().anyMatch(goal -> ArrayUtils.contains(DEPLOY_GOALS, goal))) {
             completeConfig();
-            addDeployProps();
+            addDeployProperties();
             ArtifactoryExecutionListener executionListener = new ArtifactoryExecutionListener(session, getLog(), artifactory.delegate);
             repositoryListener.setExecutionListener(executionListener);
             session.getRequest().setExecutionListener(executionListener);
         }
     }
 
+    @SuppressWarnings("deprecation")
     private void skipDefaultDeploy() {
         // For Maven versions < 3.3.3:
         session.getExecutionProperties().setProperty("maven.deploy.skip", Boolean.TRUE.toString());
@@ -86,10 +83,7 @@ public class PublishMojo extends AbstractMojo {
         session.getUserProperties().put("maven.deploy.skip", Boolean.TRUE.toString());
     }
 
-
     private void completeConfig() {
-        final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
-
         ArtifactoryClientConfiguration.BuildInfoHandler buildInfo = this.buildInfo.delegate;
         buildInfo.setBuildTimestamp(Long.toString(session.getStartTime().getTime()));
         buildInfo.setBuildStarted(DATE_FORMAT.format(session.getStartTime()));
@@ -100,27 +94,27 @@ public class PublishMojo extends AbstractMojo {
             buildInfo.setBuildNumber(buildInfo.getBuildTimestamp());
         }
         buildInfo.setBuildAgentName("Maven");
-        buildInfo.setBuildAgentVersion(Maven.class.getPackage().getImplementationVersion());
+        buildInfo.setBuildAgentVersion(getMavenVersion(getClass()));
         if (buildInfo.getBuildRetentionDays() != null) {
             buildInfo.setBuildRetentionMinimumDate(buildInfo.getBuildRetentionDays().toString());
         }
     }
 
-    private void addDeployProps() {
+    private void addDeployProperties() {
         ArtifactoryClientConfiguration.BuildInfoHandler buildInfo = this.buildInfo.delegate;
-        Properties deployParams = new Properties() {{
-            addDeployProp(this, BuildInfoFields.BUILD_TIMESTAMP, buildInfo.getBuildTimestamp());
-            addDeployProp(this, BuildInfoFields.BUILD_NAME, buildInfo.getBuildName());
-            addDeployProp(this, BuildInfoFields.BUILD_NUMBER, buildInfo.getBuildNumber());
+        Properties deployProperties = new Properties() {{
+            addDeployProperty(this, BuildInfoFields.BUILD_TIMESTAMP, buildInfo.getBuildTimestamp());
+            addDeployProperty(this, BuildInfoFields.BUILD_NAME, buildInfo.getBuildName());
+            addDeployProperty(this, BuildInfoFields.BUILD_NUMBER, buildInfo.getBuildNumber());
         }};
-        deployProperties.forEach((key, value) -> addDeployProp(deployParams, key, value));
-        artifactory.delegate.fillFromProperties(deployParams);
+        this.deployProperties.forEach((key, value) -> addDeployProperty(deployProperties, key, value));
+        artifactory.delegate.fillFromProperties(deployProperties);
     }
 
-    private void addDeployProp(Properties deployParams, String key, String value) {
+    private void addDeployProperty(Properties deployProperties, String key, String value) {
         if (StringUtils.isBlank(value)) {
             return;
         }
-        deployParams.put(ClientProperties.PROP_DEPLOY_PARAM_PROP_PREFIX + key, value);
+        deployProperties.put(ClientProperties.PROP_DEPLOY_PARAM_PROP_PREFIX + key, value);
     }
 }

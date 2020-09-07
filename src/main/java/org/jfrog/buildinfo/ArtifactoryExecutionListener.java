@@ -13,11 +13,11 @@ import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.artifact.ProjectArtifactMetadata;
 import org.apache.maven.repository.legacy.metadata.ArtifactMetadata;
 import org.jfrog.build.api.Build;
+import org.jfrog.build.api.Dependency;
 import org.jfrog.build.api.builder.ArtifactBuilder;
 import org.jfrog.build.api.builder.BuildInfoMavenBuilder;
 import org.jfrog.build.api.builder.DependencyBuilder;
 import org.jfrog.build.api.builder.ModuleBuilder;
-import org.jfrog.build.api.util.FileChecksumCalculator;
 import org.jfrog.build.extractor.BuildInfoExtractor;
 import org.jfrog.build.extractor.BuildInfoExtractorUtils;
 import org.jfrog.build.extractor.clientConfiguration.ArtifactoryClientConfiguration;
@@ -27,12 +27,11 @@ import org.jfrog.build.extractor.clientConfiguration.deploy.DeployDetails;
 import org.jfrog.buildinfo.types.ModuleArtifacts;
 
 import java.io.File;
-import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
 import static org.jfrog.build.extractor.BuildInfoExtractorUtils.getModuleIdString;
 import static org.jfrog.build.extractor.BuildInfoExtractorUtils.getTypeString;
+import static org.jfrog.buildinfo.Utils.setChecksums;
 
 /**
  * @author yahavi
@@ -106,8 +105,7 @@ public class ArtifactoryExecutionListener extends AbstractExecutionListener impl
     public void sessionEnded(ExecutionEvent event) {
         Build build = extract(event);
         if (build != null) {
-            File basedir = event.getSession().getTopLevelProject().getBasedir();
-            buildDeployer.deploy(build, conf, deployableArtifactBuilderMap, basedir);
+            buildDeployer.deploy(build, conf, deployableArtifactBuilderMap);
         }
         deployableArtifactBuilderMap.clear();
     }
@@ -142,7 +140,7 @@ public class ArtifactoryExecutionListener extends AbstractExecutionListener impl
     private void addDependencies(MavenProject project) {
         Set<Artifact> dependencies = Sets.newHashSet();
         for (Artifact artifact : project.getArtifacts()) {
-            String classifier = StringUtils.defaultString(artifact.getClassifier(), "");
+            String classifier = StringUtils.defaultString(artifact.getClassifier());
             String scope = StringUtils.defaultIfBlank(artifact.getScope(), Artifact.SCOPE_COMPILE);
             Artifact art = new DefaultArtifact(artifact.getGroupId(), artifact.getArtifactId(),
                     artifact.getVersion(), scope, artifact.getType(), classifier, artifact.getArtifactHandler());
@@ -228,21 +226,9 @@ public class ArtifactoryExecutionListener extends AbstractExecutionListener impl
             if (StringUtils.isNotBlank(scopes)) {
                 dependencyBuilder.scopes(Sets.newHashSet(scopes));
             }
-            setDependencyChecksums(depFile, dependencyBuilder);
-            moduleBuilder.addDependency(dependencyBuilder.build());
-        }
-    }
-
-    private void setDependencyChecksums(File dependencyFile, DependencyBuilder dependencyBuilder) {
-        if (dependencyFile == null || !dependencyFile.isFile()) {
-            return;
-        }
-        try {
-            Map<String, String> checksumsMap = FileChecksumCalculator.calculateChecksums(dependencyFile, "md5", "sha1");
-            dependencyBuilder.md5(checksumsMap.get("md5"));
-            dependencyBuilder.sha1(checksumsMap.get("sha1"));
-        } catch (NoSuchAlgorithmException | IOException e) {
-            logger.error("Could not set checksum values on '" + dependencyBuilder.build().getId() + "': " + e.getMessage(), e);
+            Dependency dependencyRes = dependencyBuilder.build();
+            setChecksums(depFile, dependencyRes, logger);
+            moduleBuilder.addDependency(dependencyRes);
         }
     }
 

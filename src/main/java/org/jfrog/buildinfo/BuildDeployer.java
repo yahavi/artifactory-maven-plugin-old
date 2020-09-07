@@ -1,23 +1,21 @@
 package org.jfrog.buildinfo;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.maven.plugin.logging.Log;
 import org.jfrog.build.api.Artifact;
 import org.jfrog.build.api.Build;
-import org.jfrog.build.api.BuildInfoConfigProperties;
 import org.jfrog.build.api.Module;
-import org.jfrog.build.api.util.FileChecksumCalculator;
 import org.jfrog.build.extractor.BuildInfoExtractorUtils;
 import org.jfrog.build.extractor.ModuleParallelDeployHelper;
 import org.jfrog.build.extractor.clientConfiguration.ArtifactoryClientConfiguration;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
 import org.jfrog.build.extractor.clientConfiguration.deploy.DeployDetails;
-import org.jfrog.build.extractor.clientConfiguration.deploy.DeployableArtifactsUtils;
 import org.jfrog.build.extractor.retention.Utils;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.*;
+
+import static org.jfrog.buildinfo.Utils.setChecksums;
 
 /**
  * @author yahavi
@@ -30,34 +28,12 @@ public class BuildDeployer {
         this.logger = logger;
     }
 
-    public void deploy(Build build, ArtifactoryClientConfiguration clientConf, Map<String, DeployDetails> deployableArtifactBuilders, File basedir) {
+    public void deploy(Build build, ArtifactoryClientConfiguration clientConf, Map<String, DeployDetails> deployableArtifactBuilders) {
         Map<String, Set<DeployDetails>> deployableArtifactsByModule = prepareDeployableArtifacts(build, deployableArtifactBuilders);
 
         logger.debug("Build Info Recorder: deploy artifacts: " + clientConf.publisher.isPublishArtifacts());
         logger.debug("Build Info Recorder: publication fork count: " + clientConf.publisher.getPublishForkCount());
         logger.debug("Build Info Recorder: publish build info: " + clientConf.publisher.isPublishBuildInfo());
-
-        if (clientConf.publisher.isPublishBuildInfo() || StringUtils.isNotBlank(clientConf.info.getGeneratedBuildInfoFilePath())) {
-            saveBuildInfoToFile(build, clientConf, basedir);
-        }
-
-        if (!StringUtils.isEmpty(clientConf.info.getGeneratedBuildInfoFilePath())) {
-            try {
-                BuildInfoExtractorUtils.saveBuildInfoToFile(build, new File(clientConf.info.getGeneratedBuildInfoFilePath()));
-            } catch (Exception e) {
-                logger.error("Failed writing build info to file: ", e);
-                throw new RuntimeException("Failed writing build info to file", e);
-            }
-        }
-
-        if (!StringUtils.isEmpty(clientConf.info.getDeployableArtifactsFilePath())) {
-            try {
-                DeployableArtifactsUtils.saveDeployableArtifactsToFile(deployableArtifactsByModule, new File(clientConf.info.getDeployableArtifactsFilePath()), false);
-            } catch (Exception e) {
-                logger.error("Failed writing deployable artifacts to file: ", e);
-                throw new RuntimeException("Failed writing deployable artifacts to file", e);
-            }
-        }
 
         BuildInfoClientBuilder buildInfoClientBuilder = new BuildInfoClientBuilder(logger);
         if (isDeployArtifacts(clientConf, deployableArtifactsByModule)) {
@@ -86,26 +62,11 @@ public class BuildDeployer {
             logger.info("Artifactory Build Info Recorder: deploy artifacts set to false, artifacts will not be deployed...");
             return false;
         }
-        if (deployableArtifacts == null || deployableArtifacts.isEmpty()) {
+        if (MapUtils.isEmpty(deployableArtifacts)) {
             logger.info("Artifactory Build Info Recorder: no artifacts to deploy...");
             return false;
         }
         return true;
-    }
-
-    private void saveBuildInfoToFile(Build build, ArtifactoryClientConfiguration clientConf, File basedir) {
-        String outputFile = clientConf.getExportFile();
-        File buildInfoFile = StringUtils.isBlank(outputFile) ? new File(basedir, "target/build-info.json") :
-                new File(outputFile);
-
-        logger.debug("Build Info Recorder: " + BuildInfoConfigProperties.EXPORT_FILE + " = " + outputFile);
-        logger.info("Artifactory Build Info Recorder: Saving Build Info to '" + buildInfoFile + "'");
-
-        try {
-            BuildInfoExtractorUtils.saveBuildInfoToFile(build, buildInfoFile.getCanonicalFile());
-        } catch (IOException e) {
-            throw new RuntimeException("Error occurred while persisting Build Info to '" + buildInfoFile + "'", e);
-        }
     }
 
     private Map<String, Set<DeployDetails>> prepareDeployableArtifacts(Build build, Map<String, DeployDetails> deployableArtifactBuilders) {
@@ -120,7 +81,7 @@ public class BuildDeployer {
                     DeployDetails deployable = deployableArtifactBuilders.get(artifactId);
                     if (deployable != null) {
                         File file = deployable.getFile();
-                        setArtifactChecksums(file, artifact);
+                        setChecksums(file, artifact, logger);
                         artifact.setRemotePath(deployable.getTargetRepository() + "/" + deployable.getArtifactPath());
                         moduleDeployableArtifacts.add(new DeployDetails.Builder().
                                 artifactPath(deployable.getArtifactPath()).
@@ -140,17 +101,4 @@ public class BuildDeployer {
         }
         return deployableArtifactsByModule;
     }
-
-    private void setArtifactChecksums(File artifactFile, org.jfrog.build.api.Artifact artifact) {
-        if ((artifactFile != null) && (artifactFile.isFile())) {
-            try {
-                Map<String, String> checksums = FileChecksumCalculator.calculateChecksums(artifactFile, "md5", "sha1");
-                artifact.setMd5(checksums.get("md5"));
-                artifact.setSha1(checksums.get("sha1"));
-            } catch (Exception e) {
-                logger.error("Could not set checksum values on '" + artifact.getName() + "': " + e.getMessage(), e);
-            }
-        }
-    }
-
 }

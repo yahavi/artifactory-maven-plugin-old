@@ -40,7 +40,6 @@ public class BuildInfoClientBuilder {
 
         String username = clientConf.publisher.getUsername();
         String password = clientConf.publisher.getPassword();
-
         if (StringUtils.isNotBlank(username)) {
             logResolvedProperty(ClientConfigurationFields.USERNAME, username);
             return new ArtifactoryBuildInfoClient(contextUrl, username, password, new MavenBuildInfoLogger(logger));
@@ -73,20 +72,19 @@ public class BuildInfoClientBuilder {
     private void resolveProxy(ArtifactoryClientConfiguration.ProxyHandler proxyConf,
                               ArtifactoryBuildInfoClient client) {
         String proxyHost = proxyConf.getHost();
-
-        if (StringUtils.isNotBlank(proxyHost)) {
-            logResolvedProperty(ClientConfigurationFields.HOST, proxyHost);
-            if (proxyConf.getPort() == null) {
-                return;
-            }
-            String proxyUsername = proxyConf.getUsername();
-            if (StringUtils.isNotBlank(proxyUsername)) {
-                logResolvedProperty(ClientConfigurationFields.USERNAME, proxyUsername);
-                client.setProxyConfiguration(proxyHost, proxyConf.getPort(), proxyUsername,
-                        proxyConf.getPassword());
-            } else {
-                client.setProxyConfiguration(proxyHost, proxyConf.getPort());
-            }
+        if (StringUtils.isBlank(proxyHost)) {
+            return;
+        }
+        logResolvedProperty(ClientConfigurationFields.HOST, proxyHost);
+        if (proxyConf.getPort() == null) {
+            return;
+        }
+        String proxyUsername = proxyConf.getUsername();
+        if (StringUtils.isNotBlank(proxyUsername)) {
+            logResolvedProperty(ClientConfigurationFields.USERNAME, proxyUsername);
+            client.setProxyConfiguration(proxyHost, proxyConf.getPort(), proxyUsername, proxyConf.getPassword());
+        } else {
+            client.setProxyConfiguration(proxyHost, proxyConf.getPort());
         }
     }
 
