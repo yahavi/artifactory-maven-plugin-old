@@ -9,11 +9,10 @@ import java.io.File;
 public class PublishMojoITest extends ArtifactoryPluginTestCase {
 
     public void testSomething() throws Exception {
-//        File testPom = new File(getBasedir(), "src/test/resources/maven-example/pom.xml");
-//        PublishMojo mojo = (PublishMojo) lookupConfiguredMojo(testPom);
-//        assertNotNull(mojo);
-//        mojo.artifactory = new Config.Artifactory();
-//        mojo.execute();
+        File testPom = new File(getBasedir(), "src/test/resources/maven-example/pom.xml");
+        PublishMojo mojo = getArtifactoryPublishMojo(testPom);
+        assertNotNull(mojo);
+        mojo.execute();
     }
 
 }

@@ -13,13 +13,14 @@ import java.util.Map;
  */
 public class ArtifactoryMavenPluginITest extends TestCase {
     public void testMyPlugin() throws Exception {
+
 //        File testDir = ResourceExtractor.simpleExtractResources(getClass(), "/maven-example");
 //
 //        Verifier verifier = new Verifier(testDir.getAbsolutePath());
-//        Map<String, String> envVars = new HashMap<String, String>() {{
-//            put("MAVEN_OPTS", "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005");
-//        }};
-//        verifier.executeGoal("install", envVars);
+////        Map<String, String> envVars = new HashMap<String, String>() {{
+////            put("MAVEN_OPTS", "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005");
+////        }};
+//        verifier.executeGoal("install");
 //        verifier.verifyErrorFreeLog();
     }
 }

@@ -22,6 +22,21 @@ public class ArtifactoryRepositoryListener extends AbstractRepositoryListener {
 
     private ArtifactoryExecutionListener executionListener;
 
+    /**
+     * Empty constructor for serialization
+     */
+    public ArtifactoryRepositoryListener() {
+    }
+
+    /**
+     * Constructor for tests
+     *
+     * @param logger - The logger
+     */
+    public ArtifactoryRepositoryListener(Logger logger) {
+        this.logger = logger;
+    }
+
     @SuppressWarnings("unused")
     @Inject
     private Logger logger;

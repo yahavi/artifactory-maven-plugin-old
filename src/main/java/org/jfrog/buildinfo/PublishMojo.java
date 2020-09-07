@@ -10,7 +10,6 @@ import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
-import org.codehaus.plexus.component.annotations.Requirement;
 import org.jfrog.build.api.BuildInfoFields;
 import org.jfrog.build.extractor.clientConfiguration.ArtifactoryClientConfiguration;
 import org.jfrog.build.extractor.clientConfiguration.ClientProperties;
@@ -41,10 +40,7 @@ public class PublishMojo extends AbstractMojo {
     MavenSession session;
 
     @Component(role = ArtifactoryRepositoryListener.class)
-    private ArtifactoryRepositoryListener repositoryListener;
-
-    @Requirement
-    ResolutionRepoHelper resolversHelper;
+    ArtifactoryRepositoryListener repositoryListener;
 
     @Parameter
     Map<String, String> deployProperties;
