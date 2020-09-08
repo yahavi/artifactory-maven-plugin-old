@@ -11,5 +11,8 @@ jobs:
                 os: [ubuntu-latest, windows-latest, macOS-latest]
         steps:
             - uses: actions/checkout@v1
-            - name: Tests
-              run: mvn clean install -B -DskipITs=false
+            - name: Install
+              run: mvn install -B -DskipTests
+            - name: Test
+              run: mvn verify -B -DskipITs=false
+
