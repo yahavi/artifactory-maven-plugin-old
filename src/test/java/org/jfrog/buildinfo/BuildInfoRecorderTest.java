@@ -13,27 +13,29 @@ import org.jfrog.buildinfo.types.TestExecutionEvent;
 import org.junit.Before;
 
 import java.util.List;
+import java.util.Properties;
 import java.util.Set;
+
+import static org.jfrog.build.api.BuildInfoProperties.BUILD_INFO_ENVIRONMENT_PREFIX;
 
 /**
  * @author yahavi
  */
-public class BuildInfoRecorderTest extends ArtifactoryPluginTestCase {
+public class BuildInfoRecorderTest extends PublishMojoTestBase {
 
     private static final Artifact TEST_ARTIFACT = new DefaultArtifact("groupId", "artifactId", "1", "compile", "jar", "", null);
+    private BuildInfoRecorder buildInfoRecorder;
     private ExecutionEvent executionEvent;
-
 
     @Before
     public void setUp() throws Exception {
         super.setUp();
         executionEvent = new TestExecutionEvent(mojo.session, mojo.project);
+        buildInfoRecorder = new BuildInfoRecorder(mojo.session, mojo.getLog(), mojo.artifactory.delegate);
+        mojo.project.setArtifacts(Sets.newHashSet(TEST_ARTIFACT));
     }
 
     public void testProjectSucceeded() {
-        BuildInfoRecorder buildInfoRecorder = new BuildInfoRecorder(mojo.session, mojo.getLog(), mojo.artifactory.delegate);
-
-        mojo.project.setArtifacts(Sets.newHashSet(TEST_ARTIFACT));
         buildInfoRecorder.projectSucceeded(executionEvent);
         BuildInfoBuilder buildInfoBuilder = buildInfoRecorder.getBuildInfoBuilder();
         assertNotNull(buildInfoBuilder);
@@ -73,16 +75,22 @@ public class BuildInfoRecorderTest extends ArtifactoryPluginTestCase {
         assertEquals(TEST_ARTIFACT.getType(), dependency.getType());
     }
 
+    public void testExtract() {
+        Properties properties = new Properties();
+        properties.put(BUILD_INFO_ENVIRONMENT_PREFIX + "testPropertyKey", "testPropertyValue");
+        mojo.artifactory.delegate.fillFromProperties(properties);
+        Build build = buildInfoRecorder.extract(executionEvent);
+        assertNotNull(build);
+        assertTrue(build.getDurationMillis() > 0);
+        assertEquals("testPropertyValue", build.getProperties().get(BUILD_INFO_ENVIRONMENT_PREFIX + "testPropertyKey"));
+    }
+
     public void testMojoSucceeded() {
-        BuildInfoRecorder buildInfoRecorder = new BuildInfoRecorder(mojo.session, mojo.getLog(), mojo.artifactory.delegate);
-        mojo.project.setArtifacts(Sets.newHashSet(TEST_ARTIFACT));
         buildInfoRecorder.mojoSucceeded(executionEvent);
         checkDependencyPopulated(buildInfoRecorder);
     }
 
     public void testMojoFailed() {
-        BuildInfoRecorder buildInfoRecorder = new BuildInfoRecorder(mojo.session, mojo.getLog(), mojo.artifactory.delegate);
-        mojo.project.setArtifacts(Sets.newHashSet(TEST_ARTIFACT));
         buildInfoRecorder.mojoFailed(executionEvent);
         checkDependencyPopulated(buildInfoRecorder);
     }

@@ -13,7 +13,7 @@ import static org.jfrog.build.extractor.clientConfiguration.ClientProperties.PRO
 /**
  * @author yahavi
  */
-public class PublishMojoTest extends ArtifactoryPluginTestCase {
+public class PublishMojoTest extends PublishMojoTestBase {
 
     public void testArtifactoryConfiguration() {
         Config.Artifactory configArtifactory = mojo.artifactory;

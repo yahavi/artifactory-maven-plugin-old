@@ -35,7 +35,7 @@ import java.util.Map;
 /**
  * @author yahavi
  */
-public abstract class ArtifactoryPluginTestCase extends AbstractMojoTestCase {
+public abstract class PublishMojoTestBase extends AbstractMojoTestCase {
 
     private final File testPom = new File(getBasedir(), "src/test/resources/maven-example/pom.xml");
     PublishMojo mojo;
@@ -111,7 +111,6 @@ public abstract class ArtifactoryPluginTestCase extends AbstractMojoTestCase {
         Log log = new SystemStreamLog() {
             @Override
             public void debug(CharSequence content) {
-                // Do nothing
             }
         };
         mojo.setLog(log);
