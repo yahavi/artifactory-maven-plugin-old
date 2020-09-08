@@ -74,6 +74,24 @@ public class ArtifactoryPluginITest extends TestCase {
         }
     }
 
+    public void testMavenArchetypeExample() throws Exception {
+        try (ClientAndServer mockServer = ClientAndServer.startClientAndServer(8081)) {
+            initializeMockServer(mockServer);
+            runProject("maven-archetype-simple");
+            Build build = getAndAssertBuild(mockServer);
+
+            // Check project specific fields
+            assertEquals("maven-archetype-simple", build.getName());
+            assertTrue(StringUtils.isNotBlank(build.getNumber()));
+
+            // Check module
+            Module module = build.getModule("org.example:maven-archetype-simple:1.0-SNAPSHOT");
+            assertEquals(2, CollectionUtils.size(module.getArtifacts()));
+            assertEquals(315, CollectionUtils.size(module.getDependencies()));
+            assertEquals(3, CollectionUtils.size(module.getProperties()));
+        }
+    }
+
     private void initializeMockServer(ClientAndServer mockServer) {
         mockServer.when(request("/artifactory/api/system/version")).respond(HttpResponse.response("{\"version\":\"7.0.0\"}"));
         mockServer.when(request()).respond(HttpResponse.response().withStatusCode(200));

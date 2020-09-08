@@ -19,6 +19,7 @@ import org.jfrog.buildinfo.resolution.ArtifactoryRepositoryListener;
 import org.jfrog.buildinfo.resolution.ResolutionRepoHelper;
 
 import java.text.SimpleDateFormat;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -44,19 +45,19 @@ public class PublishMojo extends AbstractMojo {
     ArtifactoryRepositoryListener repositoryListener;
 
     @Parameter
-    Map<String, String> deployProperties;
+    Map<String, String> deployProperties = new HashMap<>();
 
     @Parameter
-    Config.Artifactory artifactory;
+    Config.Artifactory artifactory = new Config.Artifactory();
 
     @Parameter
-    Config.Publisher publisher;
+    Config.Publisher publisher = new Config.Publisher();
 
     @Parameter
-    Config.BuildInfo buildInfo;
+    Config.BuildInfo buildInfo = new Config.BuildInfo();
 
     @Parameter
-    Config.Resolver resolver;
+    Config.Resolver resolver = new Config.Resolver();
 
     public void execute() {
         ResolutionRepoHelper helper = new ResolutionRepoHelper(getLog(), session, artifactory.delegate);
