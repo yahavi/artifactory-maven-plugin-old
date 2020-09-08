@@ -12,4 +12,4 @@ jobs:
         steps:
             - uses: actions/checkout@v1
             - name: Tests
-              run: mvn clean verify -DskipITs=false
+              run: mvn clean install -DskipITs=false
