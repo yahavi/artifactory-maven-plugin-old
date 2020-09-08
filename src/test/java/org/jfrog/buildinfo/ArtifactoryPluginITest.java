@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import junit.framework.TestCase;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.it.VerificationException;
@@ -18,6 +19,7 @@ import org.mockserver.model.HttpResponse;
 import org.mockserver.model.RequestDefinition;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.IOException;
 
 import static org.mockserver.model.HttpRequest.request;
@@ -32,6 +34,8 @@ import static org.mockserver.model.HttpRequest.request;
  * @author yahavi
  */
 public class ArtifactoryPluginITest extends TestCase {
+
+    private static final String PLUGIN_NOT_INSTALLED = "Couldn't find 'artifactory-maven-plugin-*.jar' file. Please make sure to run 'mvn install' before running the integration tests.";
 
     public void testMultiModule() throws Exception {
         try (ClientAndServer mockServer = ClientAndServer.startClientAndServer(8081)) {
@@ -49,28 +53,28 @@ public class ArtifactoryPluginITest extends TestCase {
             assertNotNull(parent);
             assertEquals(1, CollectionUtils.size(parent.getArtifacts()));
             assertEquals(0, CollectionUtils.size(parent.getDependencies()));
-            assertEquals(3, CollectionUtils.size(parent.getProperties()));
+            assertEquals(4, CollectionUtils.size(parent.getProperties()));
 
             // Check multi1
             Module multi1 = build.getModule("org.jfrog.test:multi1:3.7-SNAPSHOT");
             assertNotNull(multi1);
             assertEquals(4, CollectionUtils.size(multi1.getArtifacts()));
             assertEquals(13, CollectionUtils.size(multi1.getDependencies()));
-            assertEquals(3, CollectionUtils.size(multi1.getProperties()));
+            assertEquals(4, CollectionUtils.size(multi1.getProperties()));
 
             // Check multi2
             Module multi2 = build.getModule("org.jfrog.test:multi2:3.7-SNAPSHOT");
             assertNotNull(multi2);
             assertEquals(2, CollectionUtils.size(multi2.getArtifacts()));
             assertEquals(1, CollectionUtils.size(multi2.getDependencies()));
-            assertEquals(4, CollectionUtils.size(multi2.getProperties()));
+            assertEquals(5, CollectionUtils.size(multi2.getProperties()));
 
             // Check multi3
             Module multi3 = build.getModule("org.jfrog.test:multi3:3.7-SNAPSHOT");
             assertNotNull(multi1);
             assertEquals(2, CollectionUtils.size(multi3.getArtifacts()));
             assertEquals(15, CollectionUtils.size(multi3.getDependencies()));
-            assertEquals(3, CollectionUtils.size(multi3.getProperties()));
+            assertEquals(4, CollectionUtils.size(multi3.getProperties()));
         }
     }
 
@@ -87,8 +91,8 @@ public class ArtifactoryPluginITest extends TestCase {
             // Check module
             Module module = build.getModule("org.example:maven-archetype-simple:1.0-SNAPSHOT");
             assertEquals(2, CollectionUtils.size(module.getArtifacts()));
-            assertEquals(315, CollectionUtils.size(module.getDependencies()));
-            assertEquals(3, CollectionUtils.size(module.getProperties()));
+            assertEquals(215, CollectionUtils.size(module.getDependencies()));
+            assertEquals(4, CollectionUtils.size(module.getProperties()));
         }
     }
 
@@ -100,8 +104,17 @@ public class ArtifactoryPluginITest extends TestCase {
     private void runProject(String projectName) throws VerificationException, IOException {
         File testDir = ResourceExtractor.simpleExtractResources(getClass(), "/integration/" + projectName);
         Verifier verifier = new Verifier(testDir.getAbsolutePath());
-        verifier.executeGoals(Lists.newArrayList("clean", "deploy"));
+        verifier.executeGoals(Lists.newArrayList("clean", "deploy", "-Dartifactory.plugin.version=" + getPluginVersion()));
         verifier.verifyErrorFreeLog();
+    }
+
+    private String getPluginVersion() {
+        FileFilter fileFilter = new WildcardFileFilter("artifactory-maven-plugin*");
+        File[] files = new File("target").listFiles(fileFilter);
+        assertNotNull(PLUGIN_NOT_INSTALLED, files);
+        assertEquals(1, files.length);
+        String withoutStart = StringUtils.removeStart(files[0].getName(), "artifactory-maven-plugin-");
+        return StringUtils.removeEnd(withoutStart, ".jar");
     }
 
     private Build getAndAssertBuild(ClientAndServer mockServer) throws JsonProcessingException {

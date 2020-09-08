@@ -18,6 +18,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
+        <version>${artifactory.plugin.version}</version>
     </properties>
 
     <dependencies>
@@ -53,7 +54,7 @@
             <plugin>
                 <groupId>org.jfrog.buildinfo</groupId>
                 <artifactId>artifactory-maven-plugin</artifactId>
-                <version>3.0.0</version>
+                <version>${artifactory.plugin.version}</version>
                 <inherited>false</inherited>
                 <configuration/>
                 <executions>
