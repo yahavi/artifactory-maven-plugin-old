@@ -171,6 +171,7 @@
                     <systemPropertyVariables>
                         <!--This will disable JenkinsRule timeout-->
                         <maven.surefire.debug>true</maven.surefire.debug>
+                        <mockserver.logLevel>WARN</mockserver.logLevel>
                     </systemPropertyVariables>
                     <includes>
                         <include>**/*ITest.java</include>
