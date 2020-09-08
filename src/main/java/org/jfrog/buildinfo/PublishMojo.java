@@ -1,5 +1,6 @@
 package org.jfrog.buildinfo;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.artifact.repository.ArtifactRepository;
@@ -60,9 +61,11 @@ public class PublishMojo extends AbstractMojo {
     public void execute() {
         ResolutionRepoHelper helper = new ResolutionRepoHelper(getLog(), session, artifactory.delegate);
         List<ArtifactRepository> resolutionRepositories = helper.getResolutionRepositories();
-        for (MavenProject mavenProject : session.getProjects()) {
-            mavenProject.setPluginArtifactRepositories(resolutionRepositories);
-            mavenProject.setRemoteArtifactRepositories(resolutionRepositories);
+        if (CollectionUtils.isNotEmpty(resolutionRepositories)) {
+            for (MavenProject mavenProject : session.getProjects()) {
+                mavenProject.setPluginArtifactRepositories(resolutionRepositories);
+                mavenProject.setRemoteArtifactRepositories(resolutionRepositories);
+            }
         }
         skipDefaultDeploy();
         if (session.getGoals().stream().anyMatch(goal -> ArrayUtils.contains(DEPLOY_GOALS, goal))) {

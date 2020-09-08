@@ -10,7 +10,6 @@ import org.apache.maven.Maven;
 import org.apache.maven.execution.*;
 import org.apache.maven.model.PluginExecution;
 import org.apache.maven.plugin.logging.Log;
-import org.apache.maven.plugin.logging.SystemStreamLog;
 import org.apache.maven.plugin.testing.AbstractMojoTestCase;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.ProjectBuilder;
@@ -38,7 +37,7 @@ import java.util.Map;
  */
 public abstract class PublishMojoTestBase extends AbstractMojoTestCase {
 
-    private final File testPom = new File(getBasedir(), "src/test/resources/maven-example/pom.xml");
+    private final File testPom = new File(getBasedir(), "src/test/resources/unit-tests-pom/pom.xml");
     PublishMojo mojo;
 
     static Date TEST_DATE;

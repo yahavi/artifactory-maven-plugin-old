@@ -48,6 +48,9 @@ public class ArtifactoryRepositoryListener extends AbstractRepositoryListener {
 
     @Override
     public void artifactResolved(RepositoryEvent event) {
+        if (executionListener == null) {
+            return;
+        }
         String requestContext = ((ArtifactRequest) event.getTrace().getData()).getRequestContext();
         String scope = getScopeByRequestContext(requestContext);
         org.apache.maven.artifact.Artifact artifact = toMavenArtifact(event.getArtifact(), scope);

@@ -55,14 +55,14 @@ public class BuildInfoRecorderTest extends PublishMojoTestBase {
         List<Module> modules = build.getModules();
         assertEquals(1, modules.size());
         Module module = modules.get(0);
-        assertEquals("org.jfrog.test:multi:3.7-SNAPSHOT", module.getId());
+        assertEquals("org.jfrog.test:unit-tests-pom:1.0.0", module.getId());
         assertEquals("value", module.getProperties().getProperty("test.property.key"));
 
         // Check artifact
         List<org.jfrog.build.api.Artifact> artifacts = module.getArtifacts();
         assertEquals(1, artifacts.size());
         org.jfrog.build.api.Artifact artifact = artifacts.get(0);
-        assertEquals("multi-3.7-SNAPSHOT.pom", artifact.getName());
+        assertEquals("unit-tests-pom-1.0.0.pom", artifact.getName());
         assertEquals("pom", artifact.getType());
 
         // Check dependency

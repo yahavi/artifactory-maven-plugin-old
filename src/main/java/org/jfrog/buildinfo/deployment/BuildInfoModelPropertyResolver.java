@@ -14,9 +14,8 @@ import java.util.Map;
 import static org.jfrog.build.api.BuildInfoFields.*;
 import static org.jfrog.buildinfo.utils.Utils.getMavenVersion;
 
-
 /**
- * @author Noam Y. Tenne
+ * @author yahavi
  */
 public class BuildInfoModelPropertyResolver extends BuildInfoMavenBuilder {
 
