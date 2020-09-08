@@ -18,7 +18,6 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
-        <test.property.key>value</test.property.key>
     </properties>
 
     <dependencies>
@@ -65,29 +64,26 @@
                         </goals>
                         <configuration>
                             <deployProperties>
-                                <propKey>propVal</propKey>
+                                <gradle>awesome</gradle>
                             </deployProperties>
                             <artifactory>
                                 <includeEnvVars>true</includeEnvVars>
-                                <envVarsExcludePatterns>*password*,*secret*,*key*,*token*,*passphrase*</envVarsExcludePatterns>
-                                <envVarsIncludePatterns>*</envVarsIncludePatterns>
+                                <envVarsExcludePatterns>*password*,*secret*,*key*,*token*,*passphrase*
+                                </envVarsExcludePatterns>
                                 <timeoutSec>60</timeoutSec>
                             </artifactory>
                             <publisher>
-                                <contextUrl>http://127.0.0.1:8081</contextUrl>
-                                <username>admin</username>
-                                <password>password</password>
+                                <contextUrl>http://localhost:8081/artifactory</contextUrl>
+                                <username>${username}</username>
+                                <password>${password}</password>
                                 <excludePatterns>*-tests.jar</excludePatterns>
                                 <repoKey>libs-release-local</repoKey>
                                 <snapshotRepoKey>libs-snapshot-local</snapshotRepoKey>
                             </publisher>
                             <buildInfo>
-                                <buildName>buildName</buildName>
-                                <buildNumber>1</buildNumber>
-                                <buildUrl>http://1.2.3.4</buildUrl>
-                                <agentName>agentName</agentName>
-                                <agentVersion>2</agentVersion>
-                                <buildRetentionMaxDays>5</buildRetentionMaxDays>
+                                <buildName>plugin-demo</buildName>
+                                <buildNumber>${buildnumber}</buildNumber>
+                                <buildUrl>http://build-url.org</buildUrl>
                             </buildInfo>
                         </configuration>
                     </execution>
