@@ -26,7 +26,6 @@ public class BuildInfoClientBuilder {
     public ArtifactoryBuildInfoClient resolveProperties(ArtifactoryClientConfiguration clientConf) {
         ArtifactoryBuildInfoClient client = resolveClientProps(clientConf);
         resolveTimeout(clientConf, client);
-        resolveProxy(clientConf.proxy, client);
         resolveRetriesParams(clientConf, client);
         resolveInsecureTls(clientConf, client);
         return client;
@@ -68,25 +67,6 @@ public class BuildInfoClientBuilder {
 
     private void resolveInsecureTls(ArtifactoryClientConfiguration clientConf, ArtifactoryBuildInfoClient client) {
         client.setInsecureTls(clientConf.getInsecureTls());
-    }
-
-    private void resolveProxy(ArtifactoryClientConfiguration.ProxyHandler proxyConf,
-                              ArtifactoryBuildInfoClient client) {
-        String proxyHost = proxyConf.getHost();
-        if (StringUtils.isBlank(proxyHost)) {
-            return;
-        }
-        logResolvedProperty(ClientConfigurationFields.HOST, proxyHost);
-        if (proxyConf.getPort() == null) {
-            return;
-        }
-        String proxyUsername = proxyConf.getUsername();
-        if (StringUtils.isNotBlank(proxyUsername)) {
-            logResolvedProperty(ClientConfigurationFields.USERNAME, proxyUsername);
-            client.setProxyConfiguration(proxyHost, proxyConf.getPort(), proxyUsername, proxyConf.getPassword());
-        } else {
-            client.setProxyConfiguration(proxyHost, proxyConf.getPort());
-        }
     }
 
     private void logResolvedProperty(String key, String value) {

@@ -9,7 +9,6 @@ import org.apache.maven.artifact.repository.MavenArtifactRepository;
 import org.apache.maven.artifact.repository.layout.DefaultRepositoryLayout;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.logging.Log;
-import org.apache.maven.repository.Proxy;
 import org.jfrog.build.extractor.clientConfiguration.ArtifactoryClientConfiguration;
 
 import java.util.List;
@@ -41,14 +40,6 @@ public class ResolutionRepoHelper {
         if (StringUtils.isNotBlank(resolutionHelper.getRepoUsername())) {
             authentication = new Authentication(resolutionHelper.getRepoUsername(), resolutionHelper.getRepoPassword());
         }
-        Proxy proxy = null;
-        if (StringUtils.isNotBlank(resolutionHelper.getProxyHost())) {
-            proxy = new org.apache.maven.repository.Proxy();
-            proxy.setHost(resolutionHelper.getProxyHost());
-            proxy.setPort(resolutionHelper.getProxyPort());
-            proxy.setUserName(resolutionHelper.getProxyUsername());
-            proxy.setPassword(resolutionHelper.getProxyPassword());
-        }
 
         if (StringUtils.isNotBlank(snapshotRepoUrl)) {
             logger.debug("[buildinfo] Enforcing snapshot repository for resolution: " + snapshotRepoUrl);
@@ -62,10 +53,6 @@ public class ResolutionRepoHelper {
 
             if (StringUtils.isNotBlank(resolutionHelper.getRepoUsername())) {
                 authentication = new Authentication(resolutionHelper.getRepoUsername(), resolutionHelper.getRepoPassword());
-            }
-            if (proxy != null) {
-                logger.debug("[buildinfo] Enforcing proxy: " + proxy + " for snapshot resolution repository");
-                snapshotRepository.setProxy(proxy);
             }
             tempRepositories.add(snapshotRepository);
         }
@@ -81,10 +68,6 @@ public class ResolutionRepoHelper {
             if (authentication != null) {
                 logger.debug("[buildinfo] Enforcing repository authentication: " + authentication + " for release resolution repository");
                 releasePluginRepository.setAuthentication(authentication);
-            }
-            if (proxy != null) {
-                logger.debug("[buildinfo] Enforcing proxy: " + proxy + " for release resolution repository");
-                releasePluginRepository.setProxy(proxy);
             }
             tempRepositories.add(releasePluginRepository);
         }
