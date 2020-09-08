@@ -1,0 +1,1 @@
+- [ ] All [tests](https://github.com/jfrog/artifactory-maven-plugin#building-and-testing-the-sources) passed. If this feature is not already covered by the tests, I added new tests.-----

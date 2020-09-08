@@ -85,17 +85,17 @@ public class PublishMojoTest extends PublishMojoTestBase {
             List<ArtifactRepository> pluginRepositories = project.getPluginArtifactRepositories();
             assertEquals(2, pluginRepositories.size());
 
-            ArtifactRepository snapshot = pluginRepositories.get(0);
-            assertEquals("artifactory-snapshot", snapshot.getId());
-            assertEquals("http://1.2.3.4/artifactory/libs-snapshot", snapshot.getUrl());
-            assertTrue(snapshot.getSnapshots().isEnabled());
-            assertFalse(snapshot.getReleases().isEnabled());
+            ArtifactRepository snapshotsRepo = pluginRepositories.get(0);
+            assertEquals("artifactory-snapshot", snapshotsRepo.getId());
+            assertEquals("http://1.2.3.4/artifactory/libs-snapshot", snapshotsRepo.getUrl());
+            assertTrue(snapshotsRepo.getSnapshots().isEnabled());
+            assertFalse(snapshotsRepo.getReleases().isEnabled());
 
-            ArtifactRepository releases = pluginRepositories.get(1);
-            assertEquals("artifactory-release", releases.getId());
-            assertEquals("http://1.2.3.4/artifactory/libs-release", releases.getUrl());
-            assertFalse(releases.getSnapshots().isEnabled());
-            assertTrue(releases.getReleases().isEnabled());
+            ArtifactRepository releasesRepo = pluginRepositories.get(1);
+            assertEquals("artifactory-release", releasesRepo.getId());
+            assertEquals("http://1.2.3.4/artifactory/libs-release", releasesRepo.getUrl());
+            assertFalse(releasesRepo.getSnapshots().isEnabled());
+            assertTrue(releasesRepo.getReleases().isEnabled());
         }
     }
 }

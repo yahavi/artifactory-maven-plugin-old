@@ -22,6 +22,7 @@ import org.eclipse.aether.internal.impl.SimpleLocalRepositoryManagerFactory;
 import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.NoLocalRepositoryManagerException;
 import org.jfrog.buildinfo.resolution.ArtifactoryRepositoryListener;
+import org.jfrog.buildinfo.types.MavenLogger;
 import org.jfrog.buildinfo.types.PlexusLogger;
 import org.junit.Before;
 
@@ -39,6 +40,7 @@ public abstract class PublishMojoTestBase extends AbstractMojoTestCase {
 
     private final File testPom = new File(getBasedir(), "src/test/resources/maven-example/pom.xml");
     PublishMojo mojo;
+
     static Date TEST_DATE;
 
     static {
@@ -108,11 +110,7 @@ public abstract class PublishMojoTestBase extends AbstractMojoTestCase {
         mojo.buildInfo = objectMapper.readValue(configuration.getChild("buildInfo").toString(), Config.BuildInfo.class);
         mojo.publisher = objectMapper.readValue(configuration.getChild("publisher").toString(), Config.Publisher.class);
         mojo.resolver = objectMapper.readValue(configuration.getChild("resolver").toString(), Config.Resolver.class);
-        Log log = new SystemStreamLog() {
-            @Override
-            public void debug(CharSequence content) {
-            }
-        };
+        Log log = new MavenLogger();
         mojo.setLog(log);
         mojo.repositoryListener = new ArtifactoryRepositoryListener(new PlexusLogger(log));
     }
