@@ -1,5 +1,6 @@
 package org.jfrog.buildinfo.utils;
 
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.Maven;
 import org.apache.maven.plugin.logging.Log;
@@ -62,6 +63,25 @@ public class Utils {
             throw new RuntimeException("Could not extract Maven version: no version property found in the resource 'org/apache/maven/messages/build.properties' or or 'META-INF/maven/org.apache.maven/maven-core/pom.properties'");
         }
         return version;
+    }
+
+    public static String getArtifactName(String artifactId, String version, String classifier, String fileExtension) {
+        String name = artifactId + "-" + version;
+        if (StringUtils.isNotBlank(classifier)) {
+            name += "-" + classifier;
+        }
+        return name + "." + fileExtension;
+    }
+
+    public static String getDeploymentPath(String groupId, String artifactId, String version, String classifier, String fileExtension) {
+        return String.join("/", groupId.replace(".", "/"), artifactId, version, getArtifactName(artifactId, version, classifier, fileExtension));
+    }
+
+    public static String getFileExtension(File file) {
+        if (file == null) {
+            return StringUtils.EMPTY;
+        }
+        return FilenameUtils.getExtension(file.getName());
     }
 
     public static boolean isFile(File file) {

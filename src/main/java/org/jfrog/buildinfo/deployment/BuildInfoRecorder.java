@@ -24,6 +24,7 @@ import org.jfrog.build.extractor.clientConfiguration.ArtifactoryClientConfigurat
 import org.jfrog.build.extractor.clientConfiguration.IncludeExcludePatterns;
 import org.jfrog.build.extractor.clientConfiguration.PatternMatcher;
 import org.jfrog.build.extractor.clientConfiguration.deploy.DeployDetails;
+import org.jfrog.buildinfo.resolution.ArtifactoryRepositoryListener;
 import org.jfrog.buildinfo.types.ModuleArtifacts;
 
 import java.io.File;
@@ -31,23 +32,21 @@ import java.util.*;
 
 import static org.jfrog.build.extractor.BuildInfoExtractorUtils.getModuleIdString;
 import static org.jfrog.build.extractor.BuildInfoExtractorUtils.getTypeString;
-import static org.jfrog.buildinfo.utils.Utils.isFile;
-import static org.jfrog.buildinfo.utils.Utils.setChecksums;
+import static org.jfrog.buildinfo.utils.Utils.*;
 
 /**
  * @author yahavi
  */
 public class BuildInfoRecorder extends AbstractExecutionListener implements BuildInfoExtractor<ExecutionEvent> {
 
-    private final Map<String, DeployDetails> deployableArtifactBuilderMap = Maps.newConcurrentMap();
-    private final Set<Artifact> resolvedArtifacts = Collections.synchronizedSet(new HashSet<>());
+    private final Map<String, DeployDetails> deployableArtifacts = Maps.newConcurrentMap();
+    private final Set<Artifact> buildTimeDependencies = Collections.synchronizedSet(new HashSet<>());
     private final ModuleArtifacts currentModuleDependencies = new ModuleArtifacts();
     private final ModuleArtifacts currentModuleArtifacts = new ModuleArtifacts();
     private final ThreadLocal<ModuleBuilder> currentModule = new ThreadLocal<>();
     private final BuildInfoMavenBuilder buildInfoBuilder;
     private final ArtifactoryClientConfiguration conf;
     private final BuildDeployer buildDeployer;
-
     private final Log logger;
 
     public BuildInfoRecorder(MavenSession session, Log logger, ArtifactoryClientConfiguration conf) {
@@ -57,14 +56,11 @@ public class BuildInfoRecorder extends AbstractExecutionListener implements Buil
         this.conf = conf;
     }
 
-    public Set<Artifact> getCurrentModuleDependencies() {
-        return currentModuleDependencies.get();
-    }
-
-    public BuildInfoMavenBuilder getBuildInfoBuilder() {
-        return buildInfoBuilder;
-    }
-
+    /**
+     * Collect artifacts and dependencies from the project.
+     *
+     * @param event - The Maven execution event
+     */
     @Override
     public void projectSucceeded(ExecutionEvent event) {
         MavenProject project = event.getProject();
@@ -87,33 +83,49 @@ public class BuildInfoRecorder extends AbstractExecutionListener implements Buil
         currentModule.remove();
         currentModuleArtifacts.remove();
         currentModuleDependencies.remove();
-        resolvedArtifacts.clear();
+        buildTimeDependencies.clear();
     }
 
+    /**
+     * Add dependencies to the current running project.
+     *
+     * @param event - The Maven execution event
+     */
     @Override
     public void mojoSucceeded(ExecutionEvent event) {
         addDependencies(event.getProject());
     }
 
+    /**
+     * Add dependencies to the current running project.
+     *
+     * @param event - The Maven execution event
+     */
     @Override
     public void mojoFailed(ExecutionEvent event) {
         addDependencies(event.getProject());
     }
 
     /**
-     * Build and publish build info
+     * Build and publish build info.
      *
-     * @param event - The execution event
+     * @param event - The Maven execution event
      */
     @Override
     public void sessionEnded(ExecutionEvent event) {
         Build build = extract(event);
         if (build != null) {
-            buildDeployer.deploy(build, conf, deployableArtifactBuilderMap);
+            buildDeployer.deploy(build, conf, deployableArtifacts);
         }
-        deployableArtifactBuilderMap.clear();
+        deployableArtifacts.clear();
     }
 
+    /**
+     * Create a build info from 'buildInfoBuilder'.
+     *
+     * @param event - The Maven execution event
+     * @return - The build info object
+     */
     @Override
     public Build extract(ExecutionEvent event) {
         MavenSession session = event.getSession();
@@ -130,18 +142,45 @@ public class BuildInfoRecorder extends AbstractExecutionListener implements Buil
         return buildInfoBuilder.durationMillis(time).build();
     }
 
+    public Set<Artifact> getCurrentModuleDependencies() {
+        return currentModuleDependencies.get();
+    }
+
+    public BuildInfoMavenBuilder getBuildInfoBuilder() {
+        return buildInfoBuilder;
+    }
+
+    /**
+     * Called by {@link ArtifactoryRepositoryListener} during resolution of implicit project and build-time dependencies.
+     * Enabled if 'recordAllDependencies' is set to true.
+     *
+     * @param artifact - The resolved artifact
+     */
     public void artifactResolved(Artifact artifact) {
         if (artifact != null) {
-            resolvedArtifacts.add(artifact);
+            buildTimeDependencies.add(artifact);
         }
     }
 
+    /**
+     * Add project artifacts to the current module artifacts set.
+     *
+     * @param project - The Maven project
+     */
     private void addArtifacts(MavenProject project) {
         currentModuleArtifacts.add(project.getArtifact());
         currentModuleArtifacts.addAll(project.getAttachedArtifacts());
     }
 
+    /**
+     * Add project dependencies to the current module dependencies set.
+     * In case an artifact is included in both MavenProject dependencies and currentModuleDependencies,
+     * we'd like to keep the one that was taken from the MavenProject, because of the scope it has.
+     *
+     * @param project - The Maven project
+     */
     private void addDependencies(MavenProject project) {
+        // Create a set with new project dependencies. These dependencies are 1st priority in the set.
         Set<Artifact> dependencies = Sets.newHashSet();
         for (Artifact artifact : project.getArtifacts()) {
             String classifier = StringUtils.defaultString(artifact.getClassifier());
@@ -151,22 +190,29 @@ public class BuildInfoRecorder extends AbstractExecutionListener implements Buil
             art.setFile(artifact.getFile());
             dependencies.add(art);
         }
-        Set<Artifact> moduleDependencies = currentModuleDependencies.getOrCreate();
-        Set<Artifact> tempSet = Sets.newHashSet(moduleDependencies);
-        moduleDependencies.clear();
-        moduleDependencies.addAll(dependencies);
-        moduleDependencies.addAll(tempSet);
+
+        // Add current project dependencies. These dependencies are 2nd priority in the set.
+        dependencies.addAll(currentModuleDependencies.getOrCreate());
+
+        // if recordAllDependencies=true, add build time dependencies
         if (conf.publisher.isRecordAllDependencies()) {
-            moduleDependencies.addAll(resolvedArtifacts);
+            dependencies.addAll(buildTimeDependencies);
         }
+
+        currentModuleDependencies.set(dependencies);
     }
 
+    /**
+     * Add artifacts from currentModuleArtifacts to the current module.
+     *
+     * @param project       - The current Maven project
+     * @param moduleBuilder - The current Maven module
+     */
     private void addArtifactsToCurrentModule(MavenProject project, ModuleBuilder moduleBuilder) {
-        Set<Artifact> artifacts = currentModuleArtifacts.get();
+        Set<Artifact> artifacts = currentModuleArtifacts.getOrCreate();
 
-        ArtifactoryClientConfiguration.PublisherHandler publisher = conf.publisher;
-        IncludeExcludePatterns patterns = new IncludeExcludePatterns(publisher.getIncludePatterns(), publisher.getExcludePatterns());
-        boolean excludeArtifactsFromBuild = publisher.isFilterExcludedArtifactsFromBuild();
+        IncludeExcludePatterns patterns = new IncludeExcludePatterns(conf.publisher.getIncludePatterns(), conf.publisher.getExcludePatterns());
+        boolean excludeArtifactsFromBuild = conf.publisher.isFilterExcludedArtifactsFromBuild();
 
         boolean pomFileAdded = false;
         Artifact nonPomArtifact = null;
@@ -202,90 +248,83 @@ public class BuildInfoRecorder extends AbstractExecutionListener implements Buil
             String deploymentPath = getDeploymentPath(groupId, artifactId, artifactVersion, artifactClassifier, artifactExtension);
             if (isFile(artifactFile)) {
                 boolean pathConflicts = PatternMatcher.pathConflicts(deploymentPath, patterns);
-                addArtifactToBuildInfo(artifact, pathConflicts, excludeArtifactsFromBuild, moduleBuilder);
-                addDeployableArtifact(moduleBuilder, artifact, artifactFile, pathConflicts, moduleArtifact.getGroupId(), artifactId, artifactVersion, artifactClassifier, artifactExtension);
+                addArtifactToBuildInfo(moduleBuilder, artifact, pathConflicts, excludeArtifactsFromBuild);
+                addDeployableArtifact(moduleBuilder, artifact, artifactFile, pathConflicts, moduleArtifact.getGroupId(),
+                        artifactId, artifactVersion, artifactClassifier, artifactExtension);
             }
         }
         /*
          * In case of non packaging Pom project module, we need to create the pom file from the ProjectArtifactMetadata on the Artifact
          */
         if (!pomFileAdded && nonPomArtifact != null) {
-            String deploymentPath = getDeploymentPath(
-                    nonPomArtifact.getGroupId(),
-                    nonPomArtifact.getArtifactId(),
-                    nonPomArtifact.getVersion(),
-                    nonPomArtifact.getClassifier(), "pom");
-            addPomArtifact(moduleBuilder, nonPomArtifact, moduleBuilder, patterns, deploymentPath, pomFileName, excludeArtifactsFromBuild);
+            String deploymentPath = getDeploymentPath(nonPomArtifact.getGroupId(), nonPomArtifact.getArtifactId(),
+                    nonPomArtifact.getVersion(), nonPomArtifact.getClassifier(), "pom");
+            addPomArtifact(moduleBuilder, nonPomArtifact, patterns, deploymentPath, pomFileName, excludeArtifactsFromBuild);
         }
-    }
-
-    private void addDependenciesToCurrentModule(ModuleBuilder moduleBuilder) {
-        Set<Artifact> dependencies = currentModuleDependencies.getOrCreate();
-        for (Artifact dependency : dependencies) {
-            File depFile = dependency.getFile();
-            DependencyBuilder dependencyBuilder = new DependencyBuilder()
-                    .id(getModuleIdString(dependency.getGroupId(), dependency.getArtifactId(), dependency.getVersion()))
-                    .type(getTypeString(dependency.getType(), dependency.getClassifier(), getExtension(depFile)));
-            String scopes = dependency.getScope();
-            if (StringUtils.isNotBlank(scopes)) {
-                dependencyBuilder.scopes(Sets.newHashSet(scopes));
-            }
-            Dependency dependencyRes = dependencyBuilder.build();
-            setChecksums(depFile, dependencyRes, logger);
-            moduleBuilder.addDependency(dependencyRes);
-        }
-    }
-
-    private String getExtension(File depFile) {
-        String extension = StringUtils.EMPTY;
-        if (depFile == null) {
-            return extension;
-        }
-        String fileName = depFile.getName();
-        int lastDot = fileName.lastIndexOf('.');
-        if (lastDot > 0 && lastDot + 1 < fileName.length()) {
-            extension = fileName.substring(lastDot + 1);
-        }
-        return extension;
-    }
-
-    private void addPomArtifact(ModuleBuilder moduleBuilder, Artifact nonPomArtifact, ModuleBuilder module,
-                                IncludeExcludePatterns patterns, String deploymentPath, String pomFileName, boolean excludeArtifactsFromBuild) {
-        for (ArtifactMetadata metadata : nonPomArtifact.getMetadataList()) {
-            if (!(metadata instanceof ProjectArtifactMetadata)) { // The pom metadata
-                continue;
-            }
-            ArtifactBuilder artifactBuilder = new ArtifactBuilder(pomFileName).type("pom");
-            File pomFile = ((ProjectArtifactMetadata) metadata).getFile();
-            org.jfrog.build.api.Artifact pomArtifact = artifactBuilder.build();
-
-            if (isFile(pomFile)) {
-                boolean pathConflicts = PatternMatcher.pathConflicts(deploymentPath, patterns);
-                addArtifactToBuildInfo(pomArtifact, pathConflicts, excludeArtifactsFromBuild, module);
-                addDeployableArtifact(moduleBuilder, pomArtifact, pomFile, pathConflicts, nonPomArtifact.getGroupId(), nonPomArtifact.getArtifactId(), nonPomArtifact.getVersion(), nonPomArtifact.getClassifier(), "pom");
-            }
-            return;
-        }
-    }
-
-    private String getArtifactName(String artifactId, String version, String classifier, String fileExtension) {
-        String name = String.join("-", artifactId, version);
-        if (StringUtils.isNotBlank(classifier)) {
-            name += "-" + classifier;
-        }
-        return name + "." + fileExtension;
-    }
-
-    private String getDeploymentPath(String groupId, String artifactId, String version, String classifier,
-                                     String fileExtension) {
-        return String.join("/", groupId.replace(".", "/"), artifactId, version, getArtifactName(artifactId, version, classifier, fileExtension));
     }
 
     /**
+     * Add artifacts from currentModuleDependencies to the current module.
+     *
+     * @param moduleBuilder - The current Maven module
+     */
+    private void addDependenciesToCurrentModule(ModuleBuilder moduleBuilder) {
+        for (Artifact moduleDependency : currentModuleDependencies.getOrCreate()) {
+            File depFile = moduleDependency.getFile();
+            DependencyBuilder dependencyBuilder = new DependencyBuilder()
+                    .id(getModuleIdString(moduleDependency.getGroupId(), moduleDependency.getArtifactId(), moduleDependency.getVersion()))
+                    .type(getTypeString(moduleDependency.getType(), moduleDependency.getClassifier(), getFileExtension(depFile)));
+            String scopes = moduleDependency.getScope();
+            if (StringUtils.isNotBlank(scopes)) {
+                dependencyBuilder.scopes(Sets.newHashSet(scopes));
+            }
+            Dependency dependency = dependencyBuilder.build();
+            setChecksums(depFile, dependency, logger);
+            moduleBuilder.addDependency(dependency);
+        }
+    }
+
+    /**
+     * Add pom artifact from currentModuleDependencies to the current module.
+     *
+     * @param moduleBuilder - The current Maven module
+     */
+    private void addPomArtifact(ModuleBuilder moduleBuilder, Artifact nonPomArtifact, IncludeExcludePatterns patterns,
+                                String deploymentPath, String pomFileName, boolean excludeArtifactsFromBuild) {
+
+        ArtifactMetadata artifactMetadata = nonPomArtifact.getMetadataList().stream()
+                .filter(artifact -> artifact instanceof ProjectArtifactMetadata)
+                .findFirst().orElse(null);
+        if (artifactMetadata == null) {
+            // Couldn't find pom
+            return;
+        }
+
+        File pomFile = ((ProjectArtifactMetadata) artifactMetadata).getFile();
+        if (!isFile(pomFile)) {
+            // Couldn't find pom
+            return;
+        }
+
+        ArtifactBuilder artifactBuilder = new ArtifactBuilder(pomFileName).type("pom");
+        org.jfrog.build.api.Artifact pomArtifact = artifactBuilder.build();
+        boolean pathConflicts = PatternMatcher.pathConflicts(deploymentPath, patterns);
+        addArtifactToBuildInfo(moduleBuilder, pomArtifact, pathConflicts, excludeArtifactsFromBuild);
+        addDeployableArtifact(moduleBuilder, pomArtifact, pomFile, pathConflicts, nonPomArtifact.getGroupId(),
+                nonPomArtifact.getArtifactId(), nonPomArtifact.getVersion(), nonPomArtifact.getClassifier(), "pom");
+    }
+
+    /**
+     * Add an artifact to the build.
      * If excludeArtifactsFromBuild and the PatternMatcher found conflicts, add the excluded artifact to the excluded artifacts list in the build info.
      * Otherwise, add the artifact to the regular artifacts list.
+     *
+     * @param module                             - The current Maven module
+     * @param artifact                           - The artifact to add
+     * @param pathConflicts                      - If true, consider adding the artifact to the excluded artifacts list
+     * @param isFilterExcludedArtifactsFromBuild - If true and the artifacts should be excluded, add the artifact to the excluded artifacts list
      */
-    private void addArtifactToBuildInfo(org.jfrog.build.api.Artifact artifact, boolean pathConflicts, boolean isFilterExcludedArtifactsFromBuild, ModuleBuilder module) {
+    private void addArtifactToBuildInfo(ModuleBuilder module, org.jfrog.build.api.Artifact artifact, boolean pathConflicts, boolean isFilterExcludedArtifactsFromBuild) {
         if (isFilterExcludedArtifactsFromBuild && pathConflicts) {
             module.addExcludedArtifact(artifact);
             return;
@@ -293,7 +332,20 @@ public class BuildInfoRecorder extends AbstractExecutionListener implements Buil
         module.addArtifact(artifact);
     }
 
-    private void addDeployableArtifact(ModuleBuilder moduleBuilder, org.jfrog.build.api.Artifact artifact, File artifactFile, boolean pathConflicts,
+    /**
+     * Add an artifact to the deployable artifacts map.
+     *
+     * @param module        - The current Maven module
+     * @param artifact      - The artifact to add
+     * @param artifactFile  - The file of the artifact
+     * @param pathConflicts - If the path conflicts, don't deploy the artifact
+     * @param groupId       - The artifact's group ID
+     * @param artifactId    - The artifact's ID
+     * @param version       - The artifact's version
+     * @param classifier    - The artifact's classifier
+     * @param fileExtension - The file extension, for example - 'jar' or 'pom'
+     */
+    private void addDeployableArtifact(ModuleBuilder module, org.jfrog.build.api.Artifact artifact, File artifactFile, boolean pathConflicts,
                                        String groupId, String artifactId, String version, String classifier, String fileExtension) {
         if (pathConflicts) {
             logger.info("'" + artifact.getName() + "' will not be deployed due to the defined include-exclude patterns.");
@@ -309,16 +361,17 @@ public class BuildInfoRecorder extends AbstractExecutionListener implements Buil
                 .targetRepository(targetRepository)
                 .addProperties(conf.publisher.getMatrixParams())
                 .packageType(DeployDetails.PackageType.MAVEN).build();
-        String myArtifactId = BuildInfoExtractorUtils.getArtifactId(moduleBuilder.build().getId(), artifact.getName());
+        String myArtifactId = BuildInfoExtractorUtils.getArtifactId(module.build().getId(), artifact.getName());
 
-        deployableArtifactBuilderMap.put(myArtifactId, deployable);
+        deployableArtifacts.put(myArtifactId, deployable);
     }
 
     /**
+     * Decide whether to use snapshot or release repository according to the deployment path.
+     *
      * @param deployPath the full path string to extract the repo from
-     * @return Return the target deployment repository. Either the releases
-     * repository (default) or snapshots if defined and the deployed file is a
-     * snapshot.
+     * @return Return the target deployment repository.
+     * Either the releases repository (default) or snapshots if defined and the deployed file is a snapshot.
      */
     public String getTargetRepository(String deployPath) {
         String snapshotsRepository = conf.publisher.getSnapshotRepoKey();
