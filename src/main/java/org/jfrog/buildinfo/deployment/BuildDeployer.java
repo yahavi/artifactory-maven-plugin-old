@@ -48,7 +48,7 @@ public class BuildDeployer {
             return;
         }
 
-        try (ArtifactoryBuildInfoClient client = new BuildInfoClientBuilder(logger).resolveProperties(clientConf)) {
+        try (ArtifactoryBuildInfoClient client = new BuildInfoClientBuilder(logger).clientConf(clientConf).build()) {
             if (isDeployArtifacts) {
                 logger.debug(LOG_PREFIX + "Publication fork count: " + clientConf.publisher.getPublishForkCount());
                 new ModuleParallelDeployHelper().deployArtifacts(client, deployableArtifactsByModule, clientConf.publisher.getPublishForkCount());

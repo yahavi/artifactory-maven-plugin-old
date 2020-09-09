@@ -11,33 +11,49 @@ import static org.jfrog.build.extractor.clientConfiguration.ClientProperties.PRO
 import static org.jfrog.build.extractor.clientConfiguration.ClientProperties.PROP_TIMEOUT;
 
 /**
- * Simple class to build {@link ArtifactoryBuildInfoClient} for deployment.
+ * Build {@link ArtifactoryBuildInfoClient} for deployment.
  *
  * @author yahavi
  */
 public class BuildInfoClientBuilder {
 
+    private ArtifactoryClientConfiguration clientConf;
     private final Log logger;
 
     public BuildInfoClientBuilder(Log logger) {
         this.logger = logger;
     }
 
-    public ArtifactoryBuildInfoClient resolveProperties(ArtifactoryClientConfiguration clientConf) {
-        ArtifactoryBuildInfoClient client = resolveClientProps(clientConf);
-        resolveTimeout(clientConf, client);
-        resolveRetriesParams(clientConf, client);
-        resolveInsecureTls(clientConf, client);
+    public BuildInfoClientBuilder clientConf(ArtifactoryClientConfiguration clientConf) {
+        this.clientConf = clientConf;
+        return this;
+    }
+
+    /**
+     * Build {@link ArtifactoryBuildInfoClient}
+     */
+    public ArtifactoryBuildInfoClient build() {
+        ArtifactoryBuildInfoClient client = createClient();
+        setTimeout(client);
+        setRetriesParams(client);
+        setInsecureTls(client);
         return client;
     }
 
-    private ArtifactoryBuildInfoClient resolveClientProps(ArtifactoryClientConfiguration clientConf) {
+    /**
+     * Create the build info client with URL and credentials.
+     *
+     * @return ArtifactoryBuildInfoClient
+     */
+    private ArtifactoryBuildInfoClient createClient() {
+        // Resolve URL
         String contextUrl = clientConf.publisher.getContextUrl();
         if (StringUtils.isBlank(contextUrl)) {
             throw new IllegalArgumentException("Unable to resolve Artifactory Build Info Client properties: no context URL was found.");
         }
         logResolvedProperty(clientConf.publisher.getPrefix() + "." + ClientConfigurationFields.CONTEXT_URL, contextUrl);
 
+        // Resolve username and password
         String username = clientConf.publisher.getUsername();
         String password = clientConf.publisher.getPassword();
         if (StringUtils.isNotBlank(username)) {
@@ -47,7 +63,7 @@ public class BuildInfoClientBuilder {
         return new ArtifactoryBuildInfoClient(contextUrl, new MavenBuildInfoLogger(logger));
     }
 
-    private void resolveTimeout(ArtifactoryClientConfiguration clientConf, ArtifactoryBuildInfoClient client) {
+    private void setTimeout(ArtifactoryBuildInfoClient client) {
         if (clientConf.getTimeout() == null) {
             return;
         }
@@ -56,7 +72,7 @@ public class BuildInfoClientBuilder {
         client.setConnectionTimeout(timeout);
     }
 
-    private void resolveRetriesParams(ArtifactoryClientConfiguration clientConf, ArtifactoryBuildInfoClient client) {
+    private void setRetriesParams(ArtifactoryBuildInfoClient client) {
         if (clientConf.getConnectionRetries() == null) {
             return;
         }
@@ -65,8 +81,10 @@ public class BuildInfoClientBuilder {
         client.setConnectionRetries(configMaxRetries);
     }
 
-    private void resolveInsecureTls(ArtifactoryClientConfiguration clientConf, ArtifactoryBuildInfoClient client) {
-        client.setInsecureTls(clientConf.getInsecureTls());
+    private void setInsecureTls(ArtifactoryBuildInfoClient client) {
+        boolean insecureTls = clientConf.getInsecureTls();
+        logResolvedProperty(PROP_CONNECTION_RETRIES, String.valueOf(insecureTls));
+        client.setInsecureTls(insecureTls);
     }
 
     private void logResolvedProperty(String key, String value) {
