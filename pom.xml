@@ -159,8 +159,7 @@
                 <version>2.22.1</version>
                 <configuration>
                     <systemPropertyVariables>
-                        <!--This will disable JenkinsRule timeout-->
-                        <maven.surefire.debug>true</maven.surefire.debug>
+                        <!--Set MockServer log level to WARNING-->
                         <mockserver.logLevel>WARN</mockserver.logLevel>
                     </systemPropertyVariables>
                     <includes>
@@ -172,12 +171,6 @@
                         <id>integration-test</id>
                         <goals>
                             <goal>integration-test</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>verify</id>
-                        <goals>
-                            <goal>verify</goal>
                         </goals>
                     </execution>
                 </executions>
