@@ -19,12 +19,19 @@ import java.util.Properties;
  */
 public class Utils {
 
-    public static void setChecksums(File dependencyFile, BaseBuildFileBean buildFile, Log logger) {
-        if (!isFile(dependencyFile)) {
+    /**
+     * Set md5 and sha1 for the input file.
+     *
+     * @param file      - The file to calculate the checksums
+     * @param buildFile - Dependency or Artifact
+     * @param logger    - The logger
+     */
+    public static void setChecksums(File file, BaseBuildFileBean buildFile, Log logger) {
+        if (!isFile(file)) {
             return;
         }
         try {
-            Map<String, String> checksumsMap = FileChecksumCalculator.calculateChecksums(dependencyFile, "md5", "sha1");
+            Map<String, String> checksumsMap = FileChecksumCalculator.calculateChecksums(file, "md5", "sha1");
             buildFile.setMd5(checksumsMap.get("md5"));
             buildFile.setSha1(checksumsMap.get("sha1"));
         } catch (NoSuchAlgorithmException | IOException e) {
@@ -32,6 +39,12 @@ public class Utils {
         }
     }
 
+    /**
+     * Get running Maven version.
+     *
+     * @param currentClass - The caller class
+     * @return the Maven version
+     */
     @SuppressWarnings("rawtypes")
     public static String getMavenVersion(Class currentClass) {
         // Get Maven version from this class
@@ -65,6 +78,15 @@ public class Utils {
         return version;
     }
 
+    /**
+     * Get the artifact name in form of 'artifactId-version-classifier.extension' or 'artifactId-version.extension'
+     *
+     * @param artifactId    - The artifact ID
+     * @param version       - The artifact version
+     * @param classifier    - The classifier
+     * @param fileExtension - The extension of the file
+     * @return the artifact name
+     */
     public static String getArtifactName(String artifactId, String version, String classifier, String fileExtension) {
         String name = artifactId + "-" + version;
         if (StringUtils.isNotBlank(classifier)) {
@@ -73,10 +95,26 @@ public class Utils {
         return name + "." + fileExtension;
     }
 
+    /**
+     * Get the layout path in artifactory to deploy.
+     *
+     * @param groupId       - The group ID
+     * @param artifactId    - The artifact ID
+     * @param version       - The version
+     * @param classifier    - The classifier
+     * @param fileExtension - The extension of the file
+     * @return deployment path
+     */
     public static String getDeploymentPath(String groupId, String artifactId, String version, String classifier, String fileExtension) {
         return String.join("/", groupId.replace(".", "/"), artifactId, version, getArtifactName(artifactId, version, classifier, fileExtension));
     }
 
+    /**
+     * Get extension of the input file.
+     *
+     * @param file - The file
+     * @return extension of the input file
+     */
     public static String getFileExtension(File file) {
         if (file == null) {
             return StringUtils.EMPTY;
@@ -84,6 +122,12 @@ public class Utils {
         return FilenameUtils.getExtension(file.getName());
     }
 
+    /**
+     * Return true if the input File is actually a file.
+     *
+     * @param file - The file to check
+     * @return true if the input File is actually a file
+     */
     public static boolean isFile(File file) {
         return file != null && file.isFile();
     }

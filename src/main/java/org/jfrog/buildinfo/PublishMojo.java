@@ -27,9 +27,10 @@ import java.util.Properties;
 import static org.jfrog.buildinfo.utils.Utils.getMavenVersion;
 
 /**
- * Artifactory plugin creating and deploying JSON build data together with build artifacts.
+ * The plugin's entry point -
+ * Replace the resolution repositories.
+ * Replace the default deployment with the BuildInfoRecorder.
  */
-@SuppressWarnings("unused")
 @Mojo(name = "publish", defaultPhase = LifecyclePhase.VALIDATE, threadSafe = true)
 public class PublishMojo extends AbstractMojo {
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
@@ -59,33 +60,61 @@ public class PublishMojo extends AbstractMojo {
     @Parameter
     Config.Resolver resolver = new Config.Resolver();
 
+    @Override
     public void execute() {
+        enforceResolution();
+        enforceDeployment();
+    }
+
+    /**
+     * Enforce resolution from Artifactory repositories if there is a 'resolver' configuration.
+     */
+    private void enforceResolution() {
         ResolutionRepoHelper helper = new ResolutionRepoHelper(getLog(), session, artifactory.delegate);
         List<ArtifactRepository> resolutionRepositories = helper.getResolutionRepositories();
         if (CollectionUtils.isNotEmpty(resolutionRepositories)) {
+            // User configured the 'resolver'
             for (MavenProject mavenProject : session.getProjects()) {
                 mavenProject.setPluginArtifactRepositories(resolutionRepositories);
                 mavenProject.setRemoteArtifactRepositories(resolutionRepositories);
             }
         }
-        skipDefaultDeploy();
-        if (session.getGoals().stream().anyMatch(goal -> ArrayUtils.contains(DEPLOY_GOALS, goal))) {
-            completeConfig();
-            addDeployProperties();
-            BuildInfoRecorder executionListener = new BuildInfoRecorder(session, getLog(), artifactory.delegate);
-            repositoryListener.setBuildInfoRecorder(executionListener);
-            session.getRequest().setExecutionListener(executionListener);
-        }
     }
 
-    @SuppressWarnings("deprecation")
+    /**
+     * Enforce deployment to Artifactory repositories if there is a 'publisher' configuration.
+     */
+    private void enforceDeployment() {
+        if (!deployGoalExist()) {
+            return;
+        }
+        skipDefaultDeploy();
+        completeConfig();
+        addDeployProperties();
+        BuildInfoRecorder executionListener = new BuildInfoRecorder(session, getLog(), artifactory.delegate);
+        repositoryListener.setBuildInfoRecorder(executionListener);
+        session.getRequest().setExecutionListener(executionListener);
+    }
+
+    /**
+     * Skip the default maven deploy behaviour.
+     */
     private void skipDefaultDeploy() {
-        // For Maven versions < 3.3.3:
-        session.getExecutionProperties().setProperty("maven.deploy.skip", Boolean.TRUE.toString());
-        // For Maven versions >= 3.3.3:
         session.getUserProperties().put("maven.deploy.skip", Boolean.TRUE.toString());
     }
 
+    /**
+     * Return true if 'deploy' or 'maven-deploy-plugin' goals exist.
+     *
+     * @return true if 'deploy' or 'maven-deploy-plugin' goals exist
+     */
+    private boolean deployGoalExist() {
+        return session.getGoals().stream().anyMatch(goal -> ArrayUtils.contains(DEPLOY_GOALS, goal));
+    }
+
+    /**
+     * Complete missing configuration.
+     */
     private void completeConfig() {
         ArtifactoryClientConfiguration.BuildInfoHandler buildInfo = this.buildInfo.delegate;
         buildInfo.setBuildTimestamp(Long.toString(session.getStartTime().getTime()));
@@ -103,6 +132,10 @@ public class PublishMojo extends AbstractMojo {
         }
     }
 
+    /**
+     * Add buildName, buildNumber, the timestamp and the configured deployProperties as a deployment properties.
+     * The deployer adds these properties to each of of the deployed artifacts.
+     */
     private void addDeployProperties() {
         ArtifactoryClientConfiguration.BuildInfoHandler buildInfo = this.buildInfo.delegate;
         Properties deployProperties = new Properties() {{
@@ -114,6 +147,13 @@ public class PublishMojo extends AbstractMojo {
         artifactory.delegate.fillFromProperties(deployProperties);
     }
 
+    /**
+     * Add a single deploy property.
+     *
+     * @param deployProperties - The deploy properties collection
+     * @param key              - The ket of the property
+     * @param value            - The value of the property
+     */
     private void addDeployProperty(Properties deployProperties, String key, String value) {
         if (StringUtils.isBlank(value)) {
             return;

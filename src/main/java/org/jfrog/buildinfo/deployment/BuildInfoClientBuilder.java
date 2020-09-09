@@ -5,7 +5,7 @@ import org.apache.maven.plugin.logging.Log;
 import org.jfrog.build.extractor.clientConfiguration.ArtifactoryClientConfiguration;
 import org.jfrog.build.extractor.clientConfiguration.ClientConfigurationFields;
 import org.jfrog.build.extractor.clientConfiguration.client.ArtifactoryBuildInfoClient;
-import org.jfrog.buildinfo.utils.MavenBuildInfoLogger;
+import org.jfrog.buildinfo.utils.ArtifactoryMavenLogger;
 
 import static org.jfrog.build.extractor.clientConfiguration.ClientProperties.PROP_CONNECTION_RETRIES;
 import static org.jfrog.build.extractor.clientConfiguration.ClientProperties.PROP_TIMEOUT;
@@ -58,9 +58,9 @@ public class BuildInfoClientBuilder {
         String password = clientConf.publisher.getPassword();
         if (StringUtils.isNotBlank(username)) {
             logResolvedProperty(ClientConfigurationFields.USERNAME, username);
-            return new ArtifactoryBuildInfoClient(contextUrl, username, password, new MavenBuildInfoLogger(logger));
+            return new ArtifactoryBuildInfoClient(contextUrl, username, password, new ArtifactoryMavenLogger(logger));
         }
-        return new ArtifactoryBuildInfoClient(contextUrl, new MavenBuildInfoLogger(logger));
+        return new ArtifactoryBuildInfoClient(contextUrl, new ArtifactoryMavenLogger(logger));
     }
 
     private void setTimeout(ArtifactoryBuildInfoClient client) {

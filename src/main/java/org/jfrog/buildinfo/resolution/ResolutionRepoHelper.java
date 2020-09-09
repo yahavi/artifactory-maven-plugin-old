@@ -11,7 +11,7 @@ import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.logging.Log;
 import org.jfrog.build.extractor.BuildInfoExtractorUtils;
 import org.jfrog.build.extractor.clientConfiguration.ArtifactoryClientConfiguration;
-import org.jfrog.buildinfo.utils.MavenBuildInfoLogger;
+import org.jfrog.buildinfo.utils.ArtifactoryMavenLogger;
 
 import java.util.List;
 import java.util.Properties;
@@ -33,7 +33,7 @@ public class ResolutionRepoHelper {
             putAll(session.getSystemProperties());
             putAll(session.getUserProperties());
         }};
-        Properties allProps = BuildInfoExtractorUtils.mergePropertiesWithSystemAndPropertyFile(allMavenProps, new MavenBuildInfoLogger(logger));
+        Properties allProps = BuildInfoExtractorUtils.mergePropertiesWithSystemAndPropertyFile(allMavenProps, new ArtifactoryMavenLogger(logger));
         this.clientConfiguration.fillFromProperties(allProps);
     }
 

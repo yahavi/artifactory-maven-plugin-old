@@ -19,12 +19,12 @@ package org.jfrog.buildinfo.utils;
 import org.jfrog.build.api.util.Log;
 
 /**
- * @author Noam Y. Tenne
+ * @author yahavi
  */
-public class MavenBuildInfoLogger implements Log {
+public class ArtifactoryMavenLogger implements Log {
     private final org.apache.maven.plugin.logging.Log logger;
 
-    public MavenBuildInfoLogger(org.apache.maven.plugin.logging.Log logger) {
+    public ArtifactoryMavenLogger(org.apache.maven.plugin.logging.Log logger) {
         this.logger = logger;
     }
 
