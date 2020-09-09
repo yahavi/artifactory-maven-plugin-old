@@ -91,7 +91,7 @@ public class ArtifactoryPluginITest extends TestCase {
             // Check module
             Module module = build.getModule("org.example:maven-archetype-simple:1.0-SNAPSHOT");
             assertEquals(2, CollectionUtils.size(module.getArtifacts()));
-            assertEquals(215, CollectionUtils.size(module.getDependencies()));
+            assertEquals(209, CollectionUtils.size(module.getDependencies()));
             assertEquals(4, CollectionUtils.size(module.getProperties()));
         }
     }
