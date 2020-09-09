@@ -8,31 +8,33 @@ import org.jfrog.buildinfo.utils.MavenBuildInfoLogger;
 import java.util.Properties;
 
 /**
+ * Resolve Artifactory URL, username, password and repositories from system properties or the pom.
+ *
  * @author yahavi
  */
 public class ResolutionHelper {
 
-    private final ArtifactoryClientConfiguration internalConfiguration;
+    private final ArtifactoryClientConfiguration clientConfiguration;
 
     public ResolutionHelper(Log logger, Properties allMavenProps, ArtifactoryClientConfiguration clientConfiguration) {
         Properties allProps = BuildInfoExtractorUtils.mergePropertiesWithSystemAndPropertyFile(allMavenProps, new MavenBuildInfoLogger(logger));
-        this.internalConfiguration = clientConfiguration;
-        internalConfiguration.fillFromProperties(allProps);
+        this.clientConfiguration = clientConfiguration;
+        this.clientConfiguration.fillFromProperties(allProps);
     }
 
     public String getRepoReleaseUrl() {
-        return internalConfiguration.resolver.getUrl(internalConfiguration.resolver.getRepoKey());
+        return clientConfiguration.resolver.getUrl(clientConfiguration.resolver.getRepoKey());
     }
 
     public String getRepoSnapshotUrl() {
-        return internalConfiguration.resolver.getUrl(internalConfiguration.resolver.getDownloadSnapshotRepoKey());
+        return clientConfiguration.resolver.getUrl(clientConfiguration.resolver.getDownloadSnapshotRepoKey());
     }
 
     public String getRepoUsername() {
-        return internalConfiguration.resolver.getUsername();
+        return clientConfiguration.resolver.getUsername();
     }
 
     public String getRepoPassword() {
-        return internalConfiguration.resolver.getPassword();
+        return clientConfiguration.resolver.getPassword();
     }
 }

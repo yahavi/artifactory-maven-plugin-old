@@ -15,7 +15,7 @@ import org.jfrog.build.api.BuildInfoFields;
 import org.jfrog.build.extractor.clientConfiguration.ArtifactoryClientConfiguration;
 import org.jfrog.build.extractor.clientConfiguration.ClientProperties;
 import org.jfrog.buildinfo.deployment.BuildInfoRecorder;
-import org.jfrog.buildinfo.resolution.ArtifactoryRepositoryListener;
+import org.jfrog.buildinfo.resolution.RepositoryListener;
 import org.jfrog.buildinfo.resolution.ResolutionRepoHelper;
 
 import java.text.SimpleDateFormat;
@@ -41,8 +41,8 @@ public class PublishMojo extends AbstractMojo {
     @Parameter(required = true, defaultValue = "${session}")
     MavenSession session;
 
-    @Component(role = ArtifactoryRepositoryListener.class)
-    ArtifactoryRepositoryListener repositoryListener;
+    @Component(role = RepositoryListener.class)
+    RepositoryListener repositoryListener;
 
     @Parameter
     Map<String, String> deployProperties = new HashMap<>();
@@ -73,7 +73,7 @@ public class PublishMojo extends AbstractMojo {
             completeConfig();
             addDeployProperties();
             BuildInfoRecorder executionListener = new BuildInfoRecorder(session, getLog(), artifactory.delegate);
-            repositoryListener.setExecutionListener(executionListener);
+            repositoryListener.setBuildInfoRecorder(executionListener);
             session.getRequest().setExecutionListener(executionListener);
         }
     }

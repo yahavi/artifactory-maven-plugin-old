@@ -20,7 +20,7 @@ import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.internal.impl.SimpleLocalRepositoryManagerFactory;
 import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.NoLocalRepositoryManagerException;
-import org.jfrog.buildinfo.resolution.ArtifactoryRepositoryListener;
+import org.jfrog.buildinfo.resolution.RepositoryListener;
 import org.jfrog.buildinfo.types.MavenLogger;
 import org.jfrog.buildinfo.types.PlexusLogger;
 import org.junit.Before;
@@ -111,6 +111,6 @@ public abstract class PublishMojoTestBase extends AbstractMojoTestCase {
         mojo.resolver = objectMapper.readValue(configuration.getChild("resolver").toString(), Config.Resolver.class);
         Log log = new MavenLogger();
         mojo.setLog(log);
-        mojo.repositoryListener = new ArtifactoryRepositoryListener(new PlexusLogger(log));
+        mojo.repositoryListener = new RepositoryListener(new PlexusLogger(log));
     }
 }

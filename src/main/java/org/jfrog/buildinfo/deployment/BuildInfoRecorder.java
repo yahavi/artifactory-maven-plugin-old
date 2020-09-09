@@ -24,7 +24,7 @@ import org.jfrog.build.extractor.clientConfiguration.ArtifactoryClientConfigurat
 import org.jfrog.build.extractor.clientConfiguration.IncludeExcludePatterns;
 import org.jfrog.build.extractor.clientConfiguration.PatternMatcher;
 import org.jfrog.build.extractor.clientConfiguration.deploy.DeployDetails;
-import org.jfrog.buildinfo.resolution.ArtifactoryRepositoryListener;
+import org.jfrog.buildinfo.resolution.RepositoryListener;
 import org.jfrog.buildinfo.types.ModuleArtifacts;
 
 import java.io.File;
@@ -151,7 +151,7 @@ public class BuildInfoRecorder extends AbstractExecutionListener implements Buil
     }
 
     /**
-     * Called by {@link ArtifactoryRepositoryListener} during resolution of implicit project and build-time dependencies.
+     * Called by {@link RepositoryListener} during resolution of implicit project and build-time dependencies.
      * Enabled if 'recordAllDependencies' is set to true.
      *
      * @param artifact - The resolved artifact
@@ -367,11 +367,11 @@ public class BuildInfoRecorder extends AbstractExecutionListener implements Buil
     }
 
     /**
-     * Decide whether to use snapshot or release repository according to the deployment path.
+     * Return the target deployment repository.
+     * Either the releases repository (default) or snapshots if defined and the deployed file is a snapshot.
      *
      * @param deployPath the full path string to extract the repo from
      * @return Return the target deployment repository.
-     * Either the releases repository (default) or snapshots if defined and the deployed file is a snapshot.
      */
     public String getTargetRepository(String deployPath) {
         String snapshotsRepository = conf.publisher.getSnapshotRepoKey();

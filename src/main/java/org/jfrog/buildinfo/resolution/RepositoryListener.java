@@ -14,19 +14,21 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 
 /**
+ * Resolve build time dependencies. Useful if recordAllDependencies=true.
+ *
  * @author yahavi
  */
 @Named
 @Singleton
-public class ArtifactoryRepositoryListener extends AbstractRepositoryListener {
+public class RepositoryListener extends AbstractRepositoryListener {
 
-    private BuildInfoRecorder executionListener;
+    private BuildInfoRecorder buildInfoRecorder;
 
     /**
      * Empty constructor for serialization
      */
     @SuppressWarnings("unused")
-    public ArtifactoryRepositoryListener() {
+    public RepositoryListener() {
     }
 
     /**
@@ -34,29 +36,31 @@ public class ArtifactoryRepositoryListener extends AbstractRepositoryListener {
      *
      * @param logger - The logger
      */
-    public ArtifactoryRepositoryListener(Logger logger) {
+    public RepositoryListener(Logger logger) {
         this.logger = logger;
     }
 
-    @SuppressWarnings("unused")
     @Inject
     private Logger logger;
 
-    public void setExecutionListener(BuildInfoRecorder executionListener) {
-        this.executionListener = executionListener;
+    public void setBuildInfoRecorder(BuildInfoRecorder buildInfoRecorder) {
+        this.buildInfoRecorder = buildInfoRecorder;
     }
 
     @Override
     public void artifactResolved(RepositoryEvent event) {
-        if (executionListener == null) {
+        if (buildInfoRecorder == null) {
             return;
         }
         String requestContext = ((ArtifactRequest) event.getTrace().getData()).getRequestContext();
         String scope = getScopeByRequestContext(requestContext);
-        org.apache.maven.artifact.Artifact artifact = toMavenArtifact(event.getArtifact(), scope);
+        Artifact artifact = toMavenArtifact(event.getArtifact(), scope);
+        if (artifact == null) {
+            return;
+        }
         if (event.getRepository() != null) {
             logger.debug("[buildinfo] Resolved artifact: " + artifact + " from: " + event.getRepository() + ". Context is: " + requestContext);
-            executionListener.artifactResolved(artifact);
+            buildInfoRecorder.artifactResolved(artifact);
             return;
         }
         logger.debug("[buildinfo] Could not resolve artifact: " + artifact);
@@ -75,7 +79,7 @@ public class ArtifactoryRepositoryListener extends AbstractRepositoryListener {
         return artifact;
     }
 
-    public String getScopeByRequestContext(String requestContext) {
+    private String getScopeByRequestContext(String requestContext) {
         return StringUtils.equals(requestContext, "plugin") ? "build" : "project";
     }
 }
