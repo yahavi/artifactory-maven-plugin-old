@@ -25,7 +25,7 @@ import java.io.IOException;
 import static org.mockserver.model.HttpRequest.request;
 
 /**
- * == Integration tests ==
+ * === Integration tests ===
  * The tests execute 'mvn clean deploy' automatically on each one of the test projects.
  * To run the integration tests, execute 'mvn clean verify -DskipITs=false'
  * To remote debug the integration tests add the following code before 'verifier.executeGoals':
