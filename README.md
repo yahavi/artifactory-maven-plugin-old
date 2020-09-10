@@ -34,4 +34,7 @@ After running the above command, you should start a remote debugging session on 
 We welcome pull requests from the community.
 
 ### Guidelines
--   If the existing tests do not already cover your changes, please add tests.
+If the existing tests do not already cover your changes, please add tests.
+
+## Release Notes
+The release notes are available on [Bintray](https://bintray.com/jfrog/jfrog-jars/artifactory-maven-plugin#release).
