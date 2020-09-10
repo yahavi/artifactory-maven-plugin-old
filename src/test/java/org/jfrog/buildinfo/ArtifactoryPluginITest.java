@@ -27,9 +27,11 @@ import static org.mockserver.model.HttpRequest.request;
 /**
  * === Integration tests ===
  * The tests execute 'mvn clean deploy' automatically on each one of the test projects.
- * To run the integration tests, execute 'mvn clean verify -DskipITs=false'
- * To remote debug the integration tests add the following code before 'verifier.executeGoals':
- * verifier.setEnvironmentVariable("MAVEN_OPTS", "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005");
+ * In order to use the latest plugin code, run 'maven clean install' before running the tests.
+ * <p>
+ * To run the integration tests, execute 'mvn verify -DskipITs=false'
+ * To remote debug the integration tests, run 'mvn verify -DskipITs=false -DdebugITs=true', add a break point and start
+ * remote debugging on port 5005.
  *
  * @author yahavi
  */
@@ -104,6 +106,9 @@ public class ArtifactoryPluginITest extends TestCase {
     private void runProject(String projectName) throws VerificationException, IOException {
         File testDir = ResourceExtractor.simpleExtractResources(getClass(), "/integration/" + projectName);
         Verifier verifier = new Verifier(testDir.getAbsolutePath());
+        if (StringUtils.equalsIgnoreCase(System.getProperty("debugITs"), "true")) {
+            verifier.setEnvironmentVariable("MAVEN_OPTS", "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005");
+        }
         verifier.executeGoals(Lists.newArrayList("clean", "deploy", "-Dartifactory.plugin.version=" + getPluginVersion()));
         verifier.verifyErrorFreeLog();
     }

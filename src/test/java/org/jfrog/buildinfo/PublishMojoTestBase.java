@@ -33,6 +33,9 @@ import java.util.Date;
 import java.util.Map;
 
 /**
+ * Test bases of unit test classes.
+ * Initialize the {@link PublishMojo} with the pom in the following path: "src/test/resources/unit-tests-pom/pom.xml"
+ *
  * @author yahavi
  */
 public abstract class PublishMojoTestBase extends AbstractMojoTestCase {
@@ -40,20 +43,12 @@ public abstract class PublishMojoTestBase extends AbstractMojoTestCase {
     private final File testPom = new File(getBasedir(), "src/test/resources/unit-tests-pom/pom.xml");
     PublishMojo mojo;
 
-    static Date TEST_DATE;
-
-    static {
-        try {
-            TEST_DATE = new SimpleDateFormat("dd/MM/yyyy").parse("01/01/2020");
-        } catch (ParseException e) {
-            // Ignore
-        }
-    }
+    static Date TEST_DATE = createTestDate();
 
     @Before
     public void setUp() throws Exception {
         super.setUp();
-        mojo = createPublishMojo(testPom);
+        createPublishMojo();
         assertNotNull(mojo);
         mojo.execute();
     }
@@ -66,7 +61,7 @@ public abstract class PublishMojoTestBase extends AbstractMojoTestCase {
     @Override
     protected MavenSession newMavenSession(MavenProject project) {
         try {
-            MavenSession session = newMavenSession();
+            MavenSession session = createMavenSession();
             session.setCurrentProject(project);
             session.setProjects(Collections.singletonList(project));
             session.getGoals().add("deploy");
@@ -76,32 +71,65 @@ public abstract class PublishMojoTestBase extends AbstractMojoTestCase {
         }
     }
 
-    PublishMojo createPublishMojo(File pom) throws Exception {
-        ProjectBuildingRequest buildingRequest = newMavenSession().getProjectBuildingRequest();
-        ProjectBuilder projectBuilder = lookup(ProjectBuilder.class);
-        MavenProject project = projectBuilder.build(pom, buildingRequest).getProject();
-        PluginExecution execution = project.getPlugin("org.apache.maven.plugins:artifactory-maven-plugin").getExecutions().get(0);
-        Xpp3Dom dom = (Xpp3Dom) execution.getConfiguration();
-        PublishMojo mojo = (PublishMojo) lookupConfiguredMojo(project, "publish");
-        fillMojoFromConfiguration(mojo, dom);
-        return mojo;
+    /**
+     * Initialize TEST_DATE static variable.
+     *
+     * @return a new Date initialized by 01/01/2020
+     */
+    private static Date createTestDate() {
+        try {
+            return new SimpleDateFormat("dd/MM/yyyy").parse("01/01/2020");
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    private MavenSession newMavenSession() throws MavenExecutionRequestPopulationException, ComponentLookupException, NoLocalRepositoryManagerException {
+    /**
+     * Create and initialize the PublishMojo object.
+     *
+     * @throws Exception in case of any error
+     */
+    private void createPublishMojo() throws Exception {
+        ProjectBuildingRequest buildingRequest = createMavenSession().getProjectBuildingRequest();
+        ProjectBuilder projectBuilder = lookup(ProjectBuilder.class);
+        MavenProject project = projectBuilder.build(testPom, buildingRequest).getProject();
+        PluginExecution execution = project.getPlugin("org.apache.maven.plugins:artifactory-maven-plugin").getExecutions().get(0);
+        Xpp3Dom dom = (Xpp3Dom) execution.getConfiguration();
+        mojo = (PublishMojo) lookupConfiguredMojo(project, "publish");
+        fillMojoFromConfiguration(dom);
+    }
+
+    /**
+     * Create a new MavenSession.
+     *
+     * @return MavenSession
+     * @throws MavenExecutionRequestPopulationException in case of error during creating MavenExecutionRequest
+     * @throws ComponentLookupException                 in case os error during creating MavenExecutionRequest or RepositorySystemSession
+     * @throws NoLocalRepositoryManagerException        in case of error during creating DefaultRepositorySystemSession
+     */
+    private MavenSession createMavenSession() throws MavenExecutionRequestPopulationException, ComponentLookupException, NoLocalRepositoryManagerException {
+        // Create the MavenExecutionRequest
         MavenExecutionRequest request = new DefaultMavenExecutionRequest();
         request.setSystemProperties(System.getProperties());
         request.setStartTime(TEST_DATE);
-        MavenExecutionRequestPopulator requestPopulator = getContainer().lookup(MavenExecutionRequestPopulator.class);
-        requestPopulator.populateDefaults(request);
+        getContainer().lookup(MavenExecutionRequestPopulator.class).populateDefaults(request);
 
+        // Create the RepositorySystemSession
         DefaultMaven maven = (DefaultMaven) getContainer().lookup(Maven.class);
         DefaultRepositorySystemSession repoSession = (DefaultRepositorySystemSession) maven.newRepositorySession(request);
         repoSession.setLocalRepositoryManager(new SimpleLocalRepositoryManagerFactory().newInstance(repoSession, new LocalRepository(request.getLocalRepository().getBasedir())));
+
         //noinspection deprecation
         return new MavenSession(getContainer(), repoSession, request, new DefaultMavenExecutionResult());
     }
 
-    private void fillMojoFromConfiguration(PublishMojo mojo, Xpp3Dom configuration) throws JsonProcessingException {
+    /**
+     * Fille the PublishMojo with data deserialized from the pom.
+     *
+     * @param configuration - The Artifactory plugin configuration in the pom.
+     * @throws JsonProcessingException in case of deserialization error
+     */
+    private void fillMojoFromConfiguration(Xpp3Dom configuration) throws JsonProcessingException {
         ObjectMapper objectMapper = new XmlMapper().registerModule(new GuavaModule());
         mojo.deployProperties = objectMapper.readValue(configuration.getChild("deployProperties").toString(), new TypeReference<Map<String, String>>() {
         });

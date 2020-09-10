@@ -11,6 +11,8 @@ import java.util.Map;
 import static org.jfrog.build.extractor.clientConfiguration.ClientProperties.PROP_DEPLOY_PARAM_PROP_PREFIX;
 
 /**
+ * Test {@link PublishMojo} class functionality.
+ *
  * @author yahavi
  */
 public class PublishMojoTest extends PublishMojoTestBase {
@@ -85,12 +87,14 @@ public class PublishMojoTest extends PublishMojoTestBase {
             List<ArtifactRepository> pluginRepositories = project.getPluginArtifactRepositories();
             assertEquals(2, pluginRepositories.size());
 
+            // Test snapshots repository
             ArtifactRepository snapshotsRepo = pluginRepositories.get(0);
             assertEquals("artifactory-snapshot", snapshotsRepo.getId());
             assertEquals("http://1.2.3.4/artifactory/libs-snapshot", snapshotsRepo.getUrl());
             assertTrue(snapshotsRepo.getSnapshots().isEnabled());
             assertFalse(snapshotsRepo.getReleases().isEnabled());
 
+            // Test releases repository
             ArtifactRepository releasesRepo = pluginRepositories.get(1);
             assertEquals("artifactory-release", releasesRepo.getId());
             assertEquals("http://1.2.3.4/artifactory/libs-release", releasesRepo.getUrl());

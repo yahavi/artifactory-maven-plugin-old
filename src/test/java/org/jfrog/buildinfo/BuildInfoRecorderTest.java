@@ -19,6 +19,8 @@ import java.util.Set;
 import static org.jfrog.build.api.BuildInfoProperties.BUILD_INFO_ENVIRONMENT_PREFIX;
 
 /**
+ * Test {@link BuildInfoRecorder} class functionality.
+ *
  * @author yahavi
  */
 public class BuildInfoRecorderTest extends PublishMojoTestBase {

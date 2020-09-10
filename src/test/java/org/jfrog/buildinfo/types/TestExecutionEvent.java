@@ -6,6 +6,8 @@ import org.apache.maven.plugin.MojoExecution;
 import org.apache.maven.project.MavenProject;
 
 /**
+ * Used as an execution event in BuildInfoRecorderTest.
+ *
  * @author yahavi
  */
 public class TestExecutionEvent implements ExecutionEvent {
