@@ -5,8 +5,40 @@
     <artifactId>artifactory-maven-plugin</artifactId>
     <packaging>maven-plugin</packaging>
     <version>3.0.0</version>
-    <name>artifactory-maven-plugin Maven Mojo</name>
-    <url>http://maven.apache.org</url>
+    <name>Artifactory Maven plugin</name>
+    <url>https://www.jfrog.com/confluence/display/JFROG/Maven+Artifactory+Plugin</url>
+    <description>A Maven plugin to resolve artifacts from Artifactory, deploy artifacts to Artifactory, capture and
+        publish build info.
+    </description>
+    <inceptionYear>2010</inceptionYear>
+
+    <prerequisites>
+        <maven>${maven.min.version}</maven>
+    </prerequisites>
+
+    <organization>
+        <name>JFrog</name>
+        <url>https://jfrog.com</url>
+    </organization>
+
+    <scm>
+        <connection>scm:git:git://github.com/jfrog/artifactory-maven-plugin.git</connection>
+        <developerConnection>scm:git:git@github.com:jfrog/artifactory-maven-plugin.git</developerConnection>
+        <url>https://github.com/jfrog/artifactory-maven-plugin</url>
+    </scm>
+
+    <licenses>
+        <license>
+            <name>The Apache Software License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <issueManagement>
+        <system>jira</system>
+        <url>https://www.jfrog.com/jira/browse/NMAP</url>
+    </issueManagement>
 
     <properties>
         <maven.min.version>3.3.9</maven.min.version>
