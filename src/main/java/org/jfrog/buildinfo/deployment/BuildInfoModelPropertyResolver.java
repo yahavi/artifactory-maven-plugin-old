@@ -12,6 +12,7 @@ import org.jfrog.build.extractor.clientConfiguration.ArtifactoryClientConfigurat
 
 import static org.jfrog.build.api.BuildInfoFields.*;
 import static org.jfrog.buildinfo.utils.Utils.getMavenVersion;
+import static org.jfrog.buildinfo.utils.Utils.getPluginVersion;
 
 /**
  * Maven Build info builder that resolves the configuration from {@link ArtifactoryClientConfiguration}
@@ -73,8 +74,12 @@ public class BuildInfoModelPropertyResolver extends BuildInfoMavenBuilder {
     private void resolveBuildAgent(ArtifactoryClientConfiguration clientConf) {
         BuildAgent buildAgent = new BuildAgent("Maven", getMavenVersion(getClass()));
         buildAgent(buildAgent);
-        String agentName = StringUtils.firstNonBlank(clientConf.info.getAgentName(), buildAgent.getName());
-        String agentVersion = StringUtils.firstNonBlank(clientConf.info.getAgentVersion(), buildAgent.getVersion());
+        String agentName = clientConf.info.getAgentName();
+        String agentVersion = clientConf.info.getAgentVersion();
+        if (StringUtils.isBlank(agentName)) {
+            agentName = "artifactory-maven-plugin";
+            agentVersion = getPluginVersion();
+        }
         agent(new Agent(agentName, agentVersion));
     }
 

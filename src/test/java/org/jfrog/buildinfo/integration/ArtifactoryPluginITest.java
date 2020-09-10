@@ -197,8 +197,8 @@ public class ArtifactoryPluginITest extends TestCase {
 
         // Check common fields
         assertEquals("1.0.1", build.getVersion());
-        assertEquals("Maven", build.getAgent().getName());
-        assertTrue(StringUtils.isNotBlank(build.getAgent().getVersion()));
+        assertEquals("artifactory-maven-plugin", build.getAgent().getName());
+        assertEquals(getPluginVersion(), build.getAgent().getVersion());
         assertEquals("Maven", build.getBuildAgent().getName());
         assertTrue(StringUtils.isNotBlank(build.getBuildAgent().getVersion()));
         assertTrue(StringUtils.isNotBlank(build.getStarted()));

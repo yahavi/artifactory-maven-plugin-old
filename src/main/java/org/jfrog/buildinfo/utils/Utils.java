@@ -6,13 +6,14 @@ import org.apache.maven.Maven;
 import org.apache.maven.plugin.logging.Log;
 import org.jfrog.build.api.BaseBuildFileBean;
 import org.jfrog.build.api.util.FileChecksumCalculator;
+import org.jfrog.buildinfo.ArtifactoryMojo;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 import java.util.Properties;
+import java.util.stream.Stream;
 
 /**
  * @author yahavi
@@ -76,6 +77,25 @@ public class Utils {
             throw new RuntimeException("Could not extract Maven version: no version property found in the resource 'org/apache/maven/messages/build.properties' or or 'META-INF/maven/org.apache.maven/maven-core/pom.properties'");
         }
         return version;
+    }
+
+    /**
+     * Get the Artifactory Maven plugin version.
+     *
+     * @return the plugin's version
+     */
+    public static String getPluginVersion() {
+        try (InputStream inputStream = ArtifactoryMojo.class.getClassLoader().getResourceAsStream("META-INF/maven/org.jfrog.buildinfo/artifactory-maven-plugin/plugin-help.xml")) {
+            if (inputStream != null) {
+                try (Stream<String> lines = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8)).lines()) {
+                    String version = lines.filter(line -> line.contains("<version>")).findFirst().orElse("");
+                    return StringUtils.substringBetween(version, "<version>", "</version>");
+                }
+            }
+        } catch (IOException e) {
+            // Ignore
+        }
+        return null;
     }
 
     /**
