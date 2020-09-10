@@ -235,6 +235,12 @@
                                     <goal>publish</goal>
                                 </goals>
                                 <configuration>
+                                    <resolver>
+                                        <contextUrl>${ARTIFACTORY_URL}</contextUrl>
+                                        <username>${ARTIFACTORY_USERNAME}</username>
+                                        <password>${ARTIFACTORY_PASSWORD}</password>
+                                        <repoKey>jcenter</repoKey>
+                                    </resolver>
                                     <publisher>
                                         <contextUrl>${ARTIFACTORY_URL}</contextUrl>
                                         <username>${ARTIFACTORY_USERNAME}</username>
