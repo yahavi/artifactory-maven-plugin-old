@@ -32,7 +32,7 @@ import static org.jfrog.buildinfo.utils.Utils.getMavenVersion;
  * Replace the default deployment with the BuildInfoRecorder.
  */
 @Mojo(name = "publish", defaultPhase = LifecyclePhase.VALIDATE, threadSafe = true)
-public class PublishMojo extends AbstractMojo {
+public class ArtifactoryMojo extends AbstractMojo {
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
     private static final String[] DEPLOY_GOALS = {"deploy", "maven-deploy-plugin"};
 

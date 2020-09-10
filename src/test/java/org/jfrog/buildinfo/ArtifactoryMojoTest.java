@@ -11,11 +11,11 @@ import java.util.Map;
 import static org.jfrog.build.extractor.clientConfiguration.ClientProperties.PROP_DEPLOY_PARAM_PROP_PREFIX;
 
 /**
- * Test {@link PublishMojo} class functionality.
+ * Test {@link ArtifactoryMojo} class functionality.
  *
  * @author yahavi
  */
-public class PublishMojoTest extends PublishMojoTestBase {
+public class ArtifactoryMojoTest extends ArtifactoryMojoTestBase {
 
     public void testArtifactoryConfiguration() {
         Config.Artifactory configArtifactory = mojo.artifactory;

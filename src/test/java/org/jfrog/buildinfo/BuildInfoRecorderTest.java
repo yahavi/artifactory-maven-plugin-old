@@ -23,7 +23,7 @@ import static org.jfrog.build.api.BuildInfoProperties.BUILD_INFO_ENVIRONMENT_PRE
  *
  * @author yahavi
  */
-public class BuildInfoRecorderTest extends PublishMojoTestBase {
+public class BuildInfoRecorderTest extends ArtifactoryMojoTestBase {
 
     private static final Artifact TEST_ARTIFACT = new DefaultArtifact("groupId", "artifactId", "1", "compile", "jar", "", null);
     private BuildInfoRecorder buildInfoRecorder;

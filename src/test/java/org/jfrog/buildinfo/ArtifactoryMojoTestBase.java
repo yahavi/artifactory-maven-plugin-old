@@ -34,21 +34,21 @@ import java.util.Map;
 
 /**
  * Test bases of unit test classes.
- * Initialize the {@link PublishMojo} with the pom in the following path: "src/test/resources/unit-tests-pom/pom.xml"
+ * Initialize the {@link ArtifactoryMojo} with the pom in the following path: "src/test/resources/unit-tests-pom/pom.xml"
  *
  * @author yahavi
  */
-public abstract class PublishMojoTestBase extends AbstractMojoTestCase {
+public abstract class ArtifactoryMojoTestBase extends AbstractMojoTestCase {
 
     private final File testPom = new File(getBasedir(), "src/test/resources/unit-tests-pom/pom.xml");
-    PublishMojo mojo;
+    ArtifactoryMojo mojo;
 
     static Date TEST_DATE = createTestDate();
 
     @Before
     public void setUp() throws Exception {
         super.setUp();
-        createPublishMojo();
+        createArtifactoryMojo();
         assertNotNull(mojo);
         mojo.execute();
     }
@@ -85,17 +85,17 @@ public abstract class PublishMojoTestBase extends AbstractMojoTestCase {
     }
 
     /**
-     * Create and initialize the PublishMojo object.
+     * Create and initialize the ArtifactoryMojo object.
      *
      * @throws Exception in case of any error
      */
-    private void createPublishMojo() throws Exception {
+    private void createArtifactoryMojo() throws Exception {
         ProjectBuildingRequest buildingRequest = createMavenSession().getProjectBuildingRequest();
         ProjectBuilder projectBuilder = lookup(ProjectBuilder.class);
         MavenProject project = projectBuilder.build(testPom, buildingRequest).getProject();
         PluginExecution execution = project.getPlugin("org.apache.maven.plugins:artifactory-maven-plugin").getExecutions().get(0);
         Xpp3Dom dom = (Xpp3Dom) execution.getConfiguration();
-        mojo = (PublishMojo) lookupConfiguredMojo(project, "publish");
+        mojo = (ArtifactoryMojo) lookupConfiguredMojo(project, "publish");
         fillMojoFromConfiguration(dom);
     }
 
@@ -124,7 +124,7 @@ public abstract class PublishMojoTestBase extends AbstractMojoTestCase {
     }
 
     /**
-     * Fille the PublishMojo with data deserialized from the pom.
+     * Fill the ArtifactoryMojo with data deserialized from the pom.
      *
      * @param configuration - The Artifactory plugin configuration in the pom.
      * @throws JsonProcessingException in case of deserialization error
