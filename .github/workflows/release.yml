@@ -8,4 +8,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
-      -
+      - name: Install
+        run: mvn install
+      - name: deploy
+        run: >-
+          mvn deploy
+          -DARTIFACTORY_URL=${{ secrets.ARTIFACTORY_URL }}
+          -DARTIFACTORY_USERNAME=${{ secrets.ARTIFACTORY_USERNAME }}
+          -DARTIFACTORY_PASSWORD=${{ secrets.DARTIFACTORY_PASSWORD }}

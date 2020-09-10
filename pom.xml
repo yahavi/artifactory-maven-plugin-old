@@ -166,30 +166,6 @@
     <build>
         <plugins>
             <plugin>
-                <groupId>org.jfrog.buildinfo</groupId>
-                <artifactId>artifactory-maven-plugin</artifactId>
-                <version>${project.version}</version>
-                <inherited>false</inherited>
-                <executions>
-                    <execution>
-                        <id>build-info</id>
-                        <goals>
-                            <goal>publish</goal>
-                        </goals>
-                        <configuration>
-                            <publisher>
-                                <contextUrl>${ARTIFACTORY_URL}</contextUrl>
-                                <username>${ARTIFACTORY_USERNAME}</username>
-                                <password>${ARTIFACTORY_PASSWORD}</password>
-                                <repoKey>oss-release-local</repoKey>
-                                <snapshotRepoKey>oss-snapshot-local</snapshotRepoKey>
-                            </publisher>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-plugin-plugin</artifactId>
                 <version>3.6.0</version>
@@ -232,4 +208,46 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>release</id>
+            <activation>
+                <!--
+                    In order to allow to install the plugin before using it in deployment,
+                    we activate the 'release' profile only if Artifactory URL is specified.
+                -->
+                <property>
+                    <name>ARTIFACTORY_URL</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.jfrog.buildinfo</groupId>
+                        <artifactId>artifactory-maven-plugin</artifactId>
+                        <version>${project.version}</version>
+                        <inherited>false</inherited>
+                        <executions>
+                            <execution>
+                                <id>build-info</id>
+                                <goals>
+                                    <goal>publish</goal>
+                                </goals>
+                                <configuration>
+                                    <publisher>
+                                        <contextUrl>${ARTIFACTORY_URL}</contextUrl>
+                                        <username>${ARTIFACTORY_USERNAME}</username>
+                                        <password>${ARTIFACTORY_PASSWORD}</password>
+                                        <repoKey>oss-release-local</repoKey>
+                                        <snapshotRepoKey>oss-snapshot-local</snapshotRepoKey>
+                                    </publisher>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
