@@ -10,7 +10,15 @@
     <description>A Maven plugin to resolve artifacts from Artifactory, deploy artifacts to Artifactory, capture and
         publish build info.
     </description>
-    <inceptionYear>2010</inceptionYear>
+
+    <properties>
+        <maven.min.version>3.3.9</maven.min.version>
+        <buildinfo.version>2.19.1</buildinfo.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <skipITs>true</skipITs>
+    </properties>
 
     <prerequisites>
         <maven>${maven.min.version}</maven>
@@ -39,15 +47,6 @@
         <system>jira</system>
         <url>https://www.jfrog.com/jira/browse/NMAP</url>
     </issueManagement>
-
-    <properties>
-        <maven.min.version>3.3.9</maven.min.version>
-        <buildinfo.version>2.19.1</buildinfo.version>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
-        <skipITs>true</skipITs>
-    </properties>
 
     <repositories>
         <repository>
