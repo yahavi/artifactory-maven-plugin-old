@@ -15,4 +15,4 @@ jobs:
           mvn deploy
           -DARTIFACTORY_URL=${{ secrets.ARTIFACTORY_URL }}
           -DARTIFACTORY_USERNAME=${{ secrets.ARTIFACTORY_USERNAME }}
-          -DARTIFACTORY_PASSWORD=${{ secrets.DARTIFACTORY_PASSWORD }}
+          -DARTIFACTORY_PASSWORD=${{ secrets.ARTIFACTORY_PASSWORD }}
